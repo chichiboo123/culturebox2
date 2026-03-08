@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ItemDetailModal from '@/components/ItemDetailModal';
-import { ArrowLeft, Send, Package, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, Package, MessageCircle, Paperclip, X } from 'lucide-react';
 
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
