@@ -1,8 +1,6 @@
-import { useApp } from '@/contexts/AppContext';
 import { Heart } from 'lucide-react';
 
 export default function Footer() {
-  const { t } = useApp();
   return (
     <footer className="border-t border-border/50 py-8">
       <div className="mx-auto max-w-[1100px] px-4 text-center">
