@@ -104,7 +104,11 @@ async function fetchGAS(action: string, params: Record<string, any> = {}) {
 }
 
 // Upload a file (DataURL) to Google Drive via GAS and return the public URL
-async function uploadFileToDrive(dataUrl: string, fileName: string): Promise<string> {
+async function uploadFileToDrive(
+  dataUrl: string,
+  fileName: string,
+  onProgress?: (percent: number) => void
+): Promise<string> {
   // Extract base64 and mimeType from DataURL
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
@@ -127,6 +131,8 @@ async function uploadFileToDrive(dataUrl: string, fileName: string): Promise<str
   const uploadId = initResult?.uploadId;
   if (!uploadId) throw new Error('Failed to init file upload');
 
+  onProgress?.(0);
+
   // Step 2: Send chunks
   for (let i = 0; i < totalChunks; i++) {
     const chunk = base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
@@ -135,10 +141,14 @@ async function uploadFileToDrive(dataUrl: string, fileName: string): Promise<str
       chunkIndex: i.toString(),
       data: chunk,
     });
+
+    const percent = Math.round(((i + 1) / totalChunks) * 100);
+    onProgress?.(percent);
   }
 
   // Step 3: Finalize - assemble and save to Drive
   const finalResult = await fetchGAS('uploadFileFinalize', { uploadId });
+  onProgress?.(100);
   return finalResult?.fileUrl || '';
 }
 
