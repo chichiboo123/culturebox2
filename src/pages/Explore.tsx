@@ -5,7 +5,7 @@ import BoxCard from '@/components/BoxCard';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
-const FILTERS = ['all', 'arrived', 'sent', 'opened'] as const;
+const FILTERS = ['all', 'sent', 'opened'] as const;
 
 export default function Explore() {
   const { t, user, isAdmin, schools, lang } = useApp();
