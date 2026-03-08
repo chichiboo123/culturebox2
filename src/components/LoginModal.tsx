@@ -53,47 +53,56 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="mb-2 text-center text-4xl">🔑</div>
-          <DialogTitle className="text-center text-xl">{t('login.title')}</DialogTitle>
-          <DialogDescription className="text-center">{t('login.subtitle')}</DialogDescription>
+      <DialogContent className="sm:max-w-md rounded-3xl border-border/60 p-8">
+        <DialogHeader className="text-center">
+          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-3xl gradient-primary shadow-lg text-3xl">
+            🔑
+          </div>
+          <DialogTitle className="text-center text-xl font-bold">{t('login.title')}</DialogTitle>
+          <DialogDescription className="text-center text-muted-foreground">{t('login.subtitle')}</DialogDescription>
         </DialogHeader>
 
         {/* Role selector */}
-        <div className="flex gap-2">
-          <Button
-            variant={role === 'student' ? 'default' : 'outline'}
-            className="flex-1"
+        <div className="flex gap-2 rounded-2xl bg-muted/50 p-1.5">
+          <button
             onClick={() => setRole('student')}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+              role === 'student'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             🎒 {t('login.student')}
-          </Button>
-          <Button
-            variant={role === 'teacher' ? 'default' : 'outline'}
-            className="flex-1"
+          </button>
+          <button
             onClick={() => setRole('teacher')}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all ${
+              role === 'teacher'
+                ? 'bg-card text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             👩‍🏫 {t('login.teacher')}
-          </Button>
+          </button>
         </div>
 
         {/* Name */}
-        <div className="space-y-2">
-          <Label>{t('login.name')}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold">{t('login.name')}</Label>
           <Input
             value={name}
             onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
             placeholder={t('login.name')}
+            className="rounded-2xl"
           />
-          {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+          {errors.name && <p className="text-xs font-medium text-destructive">{errors.name}</p>}
         </div>
 
         {/* School */}
-        <div className="space-y-2">
-          <Label>{t('login.school')}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold">{t('login.school')}</Label>
           <Select value={schoolId || schools[0]?.id} onValueChange={setSchoolId}>
-            <SelectTrigger>
+            <SelectTrigger className="rounded-2xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -107,26 +116,26 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
         </div>
 
         {/* Code */}
-        <div className="space-y-2">
-          <Label>{role === 'student' ? t('login.code') : t('login.teacher.code')}</Label>
+        <div className="space-y-1.5">
+          <Label className="text-sm font-semibold">{role === 'student' ? t('login.code') : t('login.teacher.code')}</Label>
           <Input
             value={code}
             onChange={e => { setCode(e.target.value); setErrors(p => ({ ...p, code: '' })); }}
             placeholder={role === 'student' ? t('login.code') : t('login.teacher.code')}
-            className="font-mono tracking-widest"
+            className="rounded-2xl font-mono tracking-widest"
             autoComplete="off"
           />
           {role === 'student' && <p className="text-xs text-muted-foreground">{t('login.code.hint')}</p>}
-          {errors.code && <p className="text-xs text-destructive">{errors.code}</p>}
+          {errors.code && <p className="text-xs font-medium text-destructive">{errors.code}</p>}
         </div>
 
-        <Button onClick={handleLogin} className="w-full" size="lg">
+        <Button onClick={handleLogin} size="lg" className="w-full rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce">
           {t('login.btn')}
         </Button>
 
         <button
           onClick={() => { onOpenChange(false); onAdminClick(); }}
-          className="text-center text-xs text-muted-foreground hover:text-foreground"
+          className="text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           {t('login.admin.link')}
         </button>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ItemDetailModal from '@/components/ItemDetailModal';
+import { ArrowLeft, Send, Package, MessageCircle } from 'lucide-react';
 
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +19,7 @@ export default function BoxDetail() {
   const [tab, setTab] = useState<'items' | 'messages'>('items');
 
   // Unboxing state
-  const [unboxStep, setUnboxStep] = useState(0); // 0=tape, 1=tape-peeling, 2=ready, 3=opening, 4=opened
+  const [unboxStep, setUnboxStep] = useState(0);
   const [showContent, setShowContent] = useState(false);
 
   // Item detail modal
@@ -42,19 +43,26 @@ export default function BoxDetail() {
     API.getMessages(id).then(setMessages).catch(console.error);
   }, [id]);
 
-  if (!box) return <div className="py-20 text-center text-muted-foreground">Loading...</div>;
+  if (!box) return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="text-center animate-pulse">
+        <div className="mb-3 text-5xl">📦</div>
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    </div>
+  );
 
   const fromSchool = schools.find(s => s.id === box.from_school_id);
 
   const handleRemoveTape = () => {
     if (unboxStep >= 1) return;
-    setUnboxStep(1); // trigger peel animation
-    setTimeout(() => setUnboxStep(2), 900); // after animation, show open button
+    setUnboxStep(1);
+    setTimeout(() => setUnboxStep(2), 900);
   };
 
   const handleOpenBox = async () => {
     if (unboxStep >= 3) return;
-    setUnboxStep(3); // trigger lid open animation
+    setUnboxStep(3);
     if (box.status === 'arrived' || box.status === 'sent') {
       await API.openBox(box.id);
       setBox({ ...box, status: 'opened' });
@@ -90,119 +98,138 @@ export default function BoxDetail() {
     }
   };
 
-  // Google Drive preview for PDF
-  const getGoogleDrivePreviewUrl = (fileUrl: string): string | null => {
-    const driveMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (driveMatch) {
-      return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-    }
-    return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+  const statusConfig: Record<string, string> = {
+    draft: 'bg-muted text-muted-foreground',
+    packed: 'bg-amber-100 text-amber-700',
+    sent: 'bg-blue-100 text-blue-700',
+    arrived: 'bg-orange-100 text-orange-700',
+    opened: 'bg-emerald-100 text-emerald-700',
   };
 
-  // Unboxing experience
+  // ========== Unboxing Experience ==========
   if (!showContent) {
     return (
-      <div className="container mx-auto max-w-[1100px] px-4 py-8">
+      <div className="container mx-auto max-w-[1100px] px-4 py-12">
         <div className="mx-auto max-w-md text-center">
-          <h2 className="mb-2 text-2xl font-bold">{getBoxTitle(box, lang)}</h2>
-          <p className="mb-8 text-muted-foreground">
-            {t('unbox.from')} <span className="font-semibold">{getSchoolName(fromSchool, lang)}</span>
+          <h2 className="mb-2 text-2xl font-bold animate-slide-up">{getBoxTitle(box, lang)}</h2>
+          <p className="mb-10 text-sm text-muted-foreground animate-slide-up" style={{ animationDelay: '100ms' }}>
+            {t('unbox.from')} <span className="font-semibold text-foreground">{getSchoolName(fromSchool, lang)}</span>
           </p>
 
           {/* Box visual */}
-          <div className="relative mx-auto mb-8 w-48 cursor-pointer select-none">
-            {/* Box body */}
+          <div className="relative mx-auto mb-10 h-52 w-52 animate-scale-in" style={{ animationDelay: '200ms' }}>
             <div
-              className={`relative flex h-48 w-48 items-center justify-center rounded-2xl border-4 border-primary/30 transition-all duration-700 ${
+              className={`relative flex h-full w-full items-center justify-center rounded-[2rem] border-4 border-primary/20 shadow-xl transition-all duration-700 ${
                 unboxStep >= 3 ? 'animate-lid-open' : ''
               }`}
               style={{ background: getBoxGradient(box.id) }}
             >
-              <span className="text-6xl">📦</span>
+              <span className="text-7xl drop-shadow-lg">📦</span>
 
-              {/* Tape - with peel animation */}
+              {/* Tape */}
               {unboxStep <= 1 && (
                 <div
                   onClick={handleRemoveTape}
-                  className={`absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center bg-amber-200/90 py-2 text-[10px] font-bold tracking-widest text-amber-800 transition-all hover:bg-amber-300 ${
+                  className={`absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm bg-amber-200/95 py-2.5 text-[10px] font-extrabold tracking-[0.2em] text-amber-900 shadow-md transition-all hover:bg-amber-300 hover:shadow-lg ${
                     unboxStep === 1 ? 'animate-tape-peel' : ''
                   }`}
                 >
-                  FRAGILE · DIGITAL CULTURE BOX
+                  ✦ CULTURE BOX ✦
                 </div>
               )}
 
-              {/* Heart */}
-              <div className="absolute -right-3 -top-3 text-2xl">❤️</div>
+              {/* Heart decoration */}
+              <div className="absolute -right-4 -top-4 text-3xl animate-float">❤️</div>
+              <div className="absolute -left-2 -bottom-2 text-xl animate-float-delay-1">✨</div>
             </div>
           </div>
 
-          {unboxStep === 0 && (
-            <p className="text-sm text-muted-foreground animate-pulse">{t('unbox.tap')}</p>
-          )}
-          {unboxStep === 1 && (
-            <p className="text-sm text-muted-foreground">테이프 제거 중...</p>
-          )}
-          {unboxStep === 2 && (
-            <Button size="lg" onClick={handleOpenBox} className="animate-scale-in">
-              {t('unbox.open')}
-            </Button>
-          )}
-          {unboxStep === 3 && (
-            <p className="text-muted-foreground animate-pulse">개봉 중...</p>
-          )}
-
-          <div className="mt-6">
-            <button onClick={() => navigate('/explore')} className="text-sm text-muted-foreground hover:text-foreground">
-              ← 돌아가기
-            </button>
+          <div className="space-y-3">
+            {unboxStep === 0 && (
+              <p className="text-sm font-medium text-muted-foreground animate-pulse">
+                👆 {t('unbox.tap')}
+              </p>
+            )}
+            {unboxStep === 1 && (
+              <p className="text-sm text-muted-foreground">✂️ 테이프 제거 중...</p>
+            )}
+            {unboxStep === 2 && (
+              <Button size="lg" onClick={handleOpenBox} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce animate-pop-in">
+                {t('unbox.open')}
+              </Button>
+            )}
+            {unboxStep === 3 && (
+              <p className="text-muted-foreground animate-pulse">🎉 개봉 중...</p>
+            )}
           </div>
+
+          <button onClick={() => navigate('/explore')} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            돌아가기
+          </button>
         </div>
       </div>
     );
   }
 
-  // Box content view
+  // ========== Box Content View ==========
   return (
     <div className="container mx-auto max-w-[1100px] px-4 py-8 animate-slide-up">
-      <button onClick={() => navigate('/explore')} className="mb-4 text-sm text-muted-foreground hover:text-foreground">
-        ← 돌아가기
+      <button onClick={() => navigate('/explore')} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+        <ArrowLeft className="h-4 w-4" />
+        돌아가기
       </button>
 
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{getBoxTitle(box, lang)}</h1>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold text-white
-              ${box.status === 'opened' ? 'bg-emerald-500' : box.status === 'arrived' ? 'bg-amber-600' : 'bg-blue-500'}`}>
-              {t(`status.${box.status}`)}
-            </span>
-          </div>
-          <p className="mt-1 text-muted-foreground">{getBoxDesc(box, lang)}</p>
-          <div className="mt-2 text-xs text-muted-foreground">
-            {t('unbox.from')} {getSchoolName(fromSchool, lang)} · {box.created_at}
+      {/* Header Card */}
+      <div className="mb-8 overflow-hidden rounded-3xl border border-border shadow-sm">
+        <div className="h-28 relative" style={{ background: getBoxGradient(box.id) }}>
+          <div className="absolute right-6 top-4 text-5xl opacity-25">📦</div>
+        </div>
+        <div className="bg-card px-6 pb-6 pt-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h1 className="text-xl font-bold md:text-2xl">{getBoxTitle(box, lang)}</h1>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${statusConfig[box.status] || ''}`}>
+                  {t(`status.${box.status}`)}
+                </span>
+              </div>
+              {getBoxDesc(box, lang) && (
+                <p className="mt-1.5 text-sm text-muted-foreground">{getBoxDesc(box, lang)}</p>
+              )}
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <span>🏫 {getSchoolName(fromSchool, lang)}</span>
+                <span>·</span>
+                <span>{new Date(box.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex border-b border-border">
+      <div className="mb-6 flex gap-2">
         <button
           onClick={() => setTab('items')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'items' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
+            tab === 'items'
+              ? 'gradient-primary text-primary-foreground shadow-md'
+              : 'bg-muted/60 text-muted-foreground hover:bg-muted'
           }`}
         >
-          {t('tab.items')}
+          <Package className="h-4 w-4" />
+          {t('tab.items')} ({items.length})
         </button>
         <button
           onClick={() => setTab('messages')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            tab === 'messages' ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground'
+          className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
+            tab === 'messages'
+              ? 'gradient-primary text-primary-foreground shadow-md'
+              : 'bg-muted/60 text-muted-foreground hover:bg-muted'
           }`}
         >
-          {t('nav.social')}
+          <MessageCircle className="h-4 w-4" />
+          {t('nav.social')} ({messages.length})
         </button>
       </div>
 
@@ -210,44 +237,47 @@ export default function BoxDetail() {
       {tab === 'items' && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-muted-foreground">
-              {t('common.empty')}
+            <div className="col-span-full py-16 text-center animate-scale-in">
+              <div className="mb-3 text-5xl">📭</div>
+              <p className="text-muted-foreground">{t('common.empty')}</p>
             </div>
           ) : items.map((item, idx) => (
             <div
               key={item.id}
               onClick={() => setSelectedItem(item)}
-              className="animate-item-reveal cursor-pointer rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5"
-              style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'backwards' }}
+              className="group cursor-pointer rounded-3xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 animate-item-reveal"
+              style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'backwards' }}
             >
-              <div className="mb-2 flex items-center gap-2">
-                <span className="text-xl">{renderItemIcon(item.type)}</span>
-                <span className="text-xs font-medium uppercase text-muted-foreground">{item.type}</span>
+              <div className="mb-3 flex items-center gap-2">
+                <span className="text-2xl transition-transform duration-300 group-hover:scale-110">{renderItemIcon(item.type)}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {item.type}
+                </span>
               </div>
-              <h3 className="mb-2 font-semibold">{getItemTitle(item, lang)}</h3>
+              <h3 className="mb-2 font-bold leading-snug">{getItemTitle(item, lang)}</h3>
               {item.type === 'text' && (
-                <p className="line-clamp-3 text-sm text-muted-foreground">{item.content}</p>
+                <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">{item.content}</p>
               )}
-              {(item.type === 'image') && item.file_url && (
-                <img src={item.file_url} alt={item.title} className="mt-2 aspect-video w-full rounded-lg object-cover" />
+              {item.type === 'image' && item.file_url && (
+                <img src={item.file_url} alt={item.title} className="mt-2 aspect-video w-full rounded-2xl object-cover" />
               )}
-              {item.type === 'video' && item.file_url && (
-                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-lg bg-muted">
-                  <span className="text-3xl">▶️</span>
+              {item.type === 'video' && (
+                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-muted/60">
+                  <span className="text-4xl opacity-60">▶️</span>
                 </div>
               )}
-              {item.type === 'youtube' && item.content && (
-                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-lg bg-muted">
-                  <span className="text-3xl">▶️</span>
+              {item.type === 'youtube' && (
+                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-gradient-to-br from-red-50 to-red-100">
+                  <span className="text-4xl">▶️</span>
                 </div>
               )}
               {item.type === 'link' && (
-                <p className="mt-2 text-sm text-primary truncate">{item.content}</p>
+                <p className="mt-2 truncate text-sm text-primary">{item.content}</p>
               )}
               {item.type === 'pdf' && (
-                <div className="mt-2 flex items-center gap-2 rounded-lg bg-muted p-3">
+                <div className="mt-2 flex items-center gap-2.5 rounded-2xl bg-muted/60 p-3.5">
                   <span className="text-2xl">📄</span>
-                  <span className="text-xs text-muted-foreground">PDF 문서 · 클릭하여 보기</span>
+                  <span className="text-xs font-medium text-muted-foreground">PDF 문서 · 클릭하여 보기</span>
                 </div>
               )}
             </div>
@@ -259,14 +289,16 @@ export default function BoxDetail() {
       {tab === 'messages' && (
         <div>
           {/* Compose */}
-          <div className="mb-6 rounded-xl border border-border bg-card p-4">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-xs font-semibold text-muted-foreground">{t('compose.name.label')}</span>
+          <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                {socialName.charAt(0) || '?'}
+              </div>
               <Input
                 value={socialName}
                 onChange={e => setSocialName(e.target.value)}
                 placeholder={t('compose.name.placeholder')}
-                className="h-8 w-32 text-sm"
+                className="h-8 w-32 rounded-xl border-0 bg-muted/60 text-sm font-medium"
               />
             </div>
             <Textarea
@@ -274,45 +306,54 @@ export default function BoxDetail() {
               onChange={e => setSocialText(e.target.value)}
               placeholder={t('social.compose.placeholder')}
               rows={3}
-              className="mb-2"
+              className="mb-3 rounded-2xl border-border/60 resize-none"
             />
-            <div className="mb-2 flex items-center gap-2">
-              <span>🔗</span>
-              <Input
-                value={socialMedia}
-                onChange={e => setSocialMedia(e.target.value)}
-                placeholder={t('social.attach.placeholder')}
-                className="h-8 text-sm"
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">{t('social.name.label')}</span>
-              <Button size="sm" onClick={handlePostMessage}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-1 items-center gap-2">
+                <span className="text-muted-foreground">🔗</span>
+                <Input
+                  value={socialMedia}
+                  onChange={e => setSocialMedia(e.target.value)}
+                  placeholder={t('social.attach.placeholder')}
+                  className="h-8 rounded-xl border-0 bg-muted/60 text-sm"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={handlePostMessage}
+                className="rounded-xl gradient-primary text-primary-foreground shadow-sm btn-bounce gap-1.5"
+              >
+                <Send className="h-3.5 w-3.5" />
                 {t('social.post.btn')}
               </Button>
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground/70">{t('social.name.label')}</p>
           </div>
 
           {/* Feed */}
           <div className="space-y-4">
             {messages.length === 0 ? (
-              <div className="py-12 text-center text-muted-foreground">{t('common.empty')}</div>
-            ) : messages.map(msg => (
-              <div key={msg.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-2 flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm">
-                    👤
+              <div className="py-16 text-center animate-scale-in">
+                <div className="mb-3 text-5xl">💬</div>
+                <p className="text-muted-foreground">{t('common.empty')}</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">첫 번째 메시지를 남겨보세요!</p>
+              </div>
+            ) : messages.map((msg, i) => (
+              <div key={msg.id} className="rounded-3xl border border-border bg-card p-5 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
+                <div className="mb-3 flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                    {msg.user_name?.charAt(0) || '?'}
                   </div>
                   <div>
                     <div className="text-sm font-semibold">{msg.user_name}</div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[11px] text-muted-foreground">
                       {new Date(msg.created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-                <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
                 {msg.media_url && (
-                  <img src={msg.media_url} alt="" className="mt-3 max-h-60 rounded-lg object-cover" />
+                  <img src={msg.media_url} alt="" className="mt-3 max-h-60 rounded-2xl object-cover" />
                 )}
               </div>
             ))}
