@@ -123,7 +123,7 @@ export default function BoxDetail() {
     draft: 'bg-muted text-muted-foreground',
     packed: 'bg-amber-100 text-amber-700',
     sent: 'bg-blue-100 text-blue-700',
-    arrived: 'bg-orange-100 text-orange-700',
+    arrived: 'bg-blue-100 text-blue-700',
     opened: 'bg-emerald-100 text-emerald-700',
   };
 
