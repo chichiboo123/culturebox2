@@ -76,7 +76,6 @@ export interface User {
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec';
 
 async function fetchGAS(action: string, params: Record<string, any> = {}) {
-  // Check if payload might be too large for GET (data URLs, etc.)
   const serialized: Record<string, string> = {};
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
@@ -90,12 +89,13 @@ async function fetchGAS(action: string, params: Record<string, any> = {}) {
   try {
     let response: Response;
     if (usePOST) {
+      // GAS redirects POST to GET (302), so we use redirect: 'follow'
+      // and send JSON body that doPost will parse
       const url = new URL(GAS_URL);
-      url.searchParams.set('action', action);
       response = await fetch(url.toString(), {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(serialized),
+        redirect: 'follow',
+        body: JSON.stringify({ action, ...serialized }),
       });
     } else {
       const url = new URL(GAS_URL);
