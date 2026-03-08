@@ -103,6 +103,45 @@ async function fetchGAS(action: string, params: Record<string, any> = {}) {
   }
 }
 
+// Upload a file (DataURL) to Google Drive via GAS and return the public URL
+async function uploadFileToDrive(dataUrl: string, fileName: string): Promise<string> {
+  // Extract base64 and mimeType from DataURL
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) {
+    console.warn('Invalid DataURL format, skipping upload');
+    return '';
+  }
+  const mimeType = match[1];
+  const base64Data = match[2];
+
+  // Split base64 into chunks to send via GET (each chunk ~1500 chars to stay under URL limit)
+  const CHUNK_SIZE = 1500;
+  const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
+
+  // Step 1: Init upload
+  const initResult = await fetchGAS('uploadFileInit', {
+    fileName,
+    mimeType,
+    totalChunks: totalChunks.toString(),
+  });
+  const uploadId = initResult?.uploadId;
+  if (!uploadId) throw new Error('Failed to init file upload');
+
+  // Step 2: Send chunks
+  for (let i = 0; i < totalChunks; i++) {
+    const chunk = base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+    await fetchGAS('uploadFileChunk', {
+      uploadId,
+      chunkIndex: i.toString(),
+      data: chunk,
+    });
+  }
+
+  // Step 3: Finalize - assemble and save to Drive
+  const finalResult = await fetchGAS('uploadFileFinalize', { uploadId });
+  return finalResult?.fileUrl || '';
+}
+
 export const API = {
   getSchools: (): Promise<School[]> => fetchGAS('getSchools'),
   getBoxes: (filters: { status?: string; search?: string; school_id?: string } = {}): Promise<Box[]> => fetchGAS('getBoxes', filters),
@@ -126,6 +165,7 @@ export const API = {
   updateSchool: (data: Partial<School> & { id: string }): Promise<School> => fetchGAS('updateSchool', data),
   deleteSchool: (id: string): Promise<boolean> => fetchGAS('deleteSchool', { id }),
   updateUser: (data: any): Promise<any> => fetchGAS('updateUser', data),
+  uploadFile: uploadFileToDrive,
 };
 
 // Helper functions
