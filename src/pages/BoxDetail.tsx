@@ -77,15 +77,34 @@ export default function BoxDetail() {
 
   const handlePostMessage = async () => {
     if (!socialText.trim() || !socialName.trim()) return;
+    const mediaUrl = socialFilePreview || socialMedia.trim() || undefined;
     const msg = await API.addMessage({
       box_id: box.id,
       user_name: socialName.trim(),
       content: socialText.trim(),
-      media_url: socialMedia.trim() || undefined,
+      media_url: mediaUrl,
     });
     setMessages([...messages, msg]);
     setSocialText('');
     setSocialMedia('');
+    setSocialFile(null);
+    setSocialFilePreview('');
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSocialFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSocialFilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveFile = () => {
+    setSocialFile(null);
+    setSocialFilePreview('');
   };
 
   const renderItemIcon = (type: string) => {
