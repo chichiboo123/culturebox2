@@ -192,3 +192,37 @@
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
+
+/* Tape peel animation */
+@keyframes tapePeel {
+  0% { transform: scaleY(1) translateY(-50%); opacity: 1; }
+  30% { transform: scaleY(1) translateY(-50%) rotateX(30deg); opacity: 1; }
+  60% { transform: scaleY(0.5) translateY(-80%) rotateX(60deg); opacity: 0.6; }
+  100% { transform: scaleY(0) translateY(-120%) rotateX(90deg); opacity: 0; }
+}
+
+.animate-tape-peel {
+  animation: tapePeel 0.8s ease-in-out forwards;
+  transform-origin: top center;
+}
+
+/* Box lid open */
+@keyframes lidOpen {
+  0% { transform: perspective(600px) rotateX(0deg); }
+  100% { transform: perspective(600px) rotateX(-120deg); opacity: 0; }
+}
+
+.animate-lid-open {
+  animation: lidOpen 1s ease-in-out forwards;
+  transform-origin: top center;
+}
+
+/* Items reveal */
+@keyframes itemReveal {
+  0% { opacity: 0; transform: translateY(30px) scale(0.8); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-item-reveal {
+  animation: itemReveal 0.5s ease-out forwards;
+}
