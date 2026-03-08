@@ -29,6 +29,8 @@ export default function BoxDetail() {
   const [socialName, setSocialName] = useState(user?.name || '');
   const [socialText, setSocialText] = useState('');
   const [socialMedia, setSocialMedia] = useState('');
+  const [socialFile, setSocialFile] = useState<File | null>(null);
+  const [socialFilePreview, setSocialFilePreview] = useState<string>('');
 
   useEffect(() => {
     if (!id) return;
