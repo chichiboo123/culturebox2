@@ -5,6 +5,7 @@ import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSch
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import ItemDetailModal from '@/components/ItemDetailModal';
 
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,8 +18,11 @@ export default function BoxDetail() {
   const [tab, setTab] = useState<'items' | 'messages'>('items');
 
   // Unboxing state
-  const [unboxStep, setUnboxStep] = useState(0); // 0=tape, 1=ready, 2=opened
+  const [unboxStep, setUnboxStep] = useState(0); // 0=tape, 1=tape-peeling, 2=ready, 3=opening, 4=opened
   const [showContent, setShowContent] = useState(false);
+
+  // Item detail modal
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   // Social compose
   const [socialName, setSocialName] = useState(user?.name || '');
@@ -31,7 +35,7 @@ export default function BoxDetail() {
       setBox(b);
       if (b.status === 'opened' || b.status === 'draft') {
         setShowContent(true);
-        setUnboxStep(2);
+        setUnboxStep(4);
       }
     }).catch(console.error);
     API.getItems(id).then(setItems).catch(console.error);
@@ -44,17 +48,21 @@ export default function BoxDetail() {
 
   const handleRemoveTape = () => {
     if (unboxStep >= 1) return;
-    setUnboxStep(1);
+    setUnboxStep(1); // trigger peel animation
+    setTimeout(() => setUnboxStep(2), 900); // after animation, show open button
   };
 
   const handleOpenBox = async () => {
-    if (unboxStep >= 2) return;
-    setUnboxStep(2);
+    if (unboxStep >= 3) return;
+    setUnboxStep(3); // trigger lid open animation
     if (box.status === 'arrived' || box.status === 'sent') {
       await API.openBox(box.id);
       setBox({ ...box, status: 'opened' });
     }
-    setTimeout(() => setShowContent(true), 1500);
+    setTimeout(() => {
+      setUnboxStep(4);
+      setShowContent(true);
+    }, 1200);
   };
 
   const handlePostMessage = async () => {
@@ -82,6 +90,15 @@ export default function BoxDetail() {
     }
   };
 
+  // Google Drive preview for PDF
+  const getGoogleDrivePreviewUrl = (fileUrl: string): string | null => {
+    const driveMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (driveMatch) {
+      return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    }
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
+  };
+
   // Unboxing experience
   if (!showContent) {
     return (
@@ -93,35 +110,45 @@ export default function BoxDetail() {
           </p>
 
           {/* Box visual */}
-          <div className="relative mx-auto mb-8 w-48 cursor-pointer">
+          <div className="relative mx-auto mb-8 w-48 cursor-pointer select-none">
             {/* Box body */}
-            <div className={`relative flex h-48 w-48 items-center justify-center rounded-2xl border-4 border-primary/30 transition-all duration-700 ${
-              unboxStep >= 2 ? 'scale-110 opacity-0' : ''
-            }`} style={{ background: getBoxGradient(box.id) }}>
+            <div
+              className={`relative flex h-48 w-48 items-center justify-center rounded-2xl border-4 border-primary/30 transition-all duration-700 ${
+                unboxStep >= 3 ? 'animate-lid-open' : ''
+              }`}
+              style={{ background: getBoxGradient(box.id) }}
+            >
               <span className="text-6xl">📦</span>
-              {/* Tape */}
-              {unboxStep < 1 && (
+
+              {/* Tape - with peel animation */}
+              {unboxStep <= 1 && (
                 <div
                   onClick={handleRemoveTape}
-                  className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center bg-amber-200/90 py-2 text-[10px] font-bold tracking-widest text-amber-800 transition-all hover:bg-amber-300"
+                  className={`absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center bg-amber-200/90 py-2 text-[10px] font-bold tracking-widest text-amber-800 transition-all hover:bg-amber-300 ${
+                    unboxStep === 1 ? 'animate-tape-peel' : ''
+                  }`}
                 >
                   FRAGILE · DIGITAL CULTURE BOX
                 </div>
               )}
+
               {/* Heart */}
               <div className="absolute -right-3 -top-3 text-2xl">❤️</div>
             </div>
           </div>
 
           {unboxStep === 0 && (
-            <p className="text-sm text-muted-foreground">{t('unbox.tap')}</p>
+            <p className="text-sm text-muted-foreground animate-pulse">{t('unbox.tap')}</p>
           )}
           {unboxStep === 1 && (
-            <Button size="lg" onClick={handleOpenBox}>
+            <p className="text-sm text-muted-foreground">테이프 제거 중...</p>
+          )}
+          {unboxStep === 2 && (
+            <Button size="lg" onClick={handleOpenBox} className="animate-scale-in">
               {t('unbox.open')}
             </Button>
           )}
-          {unboxStep >= 2 && !showContent && (
+          {unboxStep === 3 && (
             <p className="text-muted-foreground animate-pulse">개봉 중...</p>
           )}
 
@@ -186,8 +213,13 @@ export default function BoxDetail() {
             <div className="col-span-full py-12 text-center text-muted-foreground">
               {t('common.empty')}
             </div>
-          ) : items.map(item => (
-            <div key={item.id} className="rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md">
+          ) : items.map((item, idx) => (
+            <div
+              key={item.id}
+              onClick={() => setSelectedItem(item)}
+              className="animate-item-reveal cursor-pointer rounded-xl border border-border bg-card p-4 transition-all hover:shadow-md hover:border-primary/40 hover:-translate-y-0.5"
+              style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'backwards' }}
+            >
               <div className="mb-2 flex items-center gap-2">
                 <span className="text-xl">{renderItemIcon(item.type)}</span>
                 <span className="text-xs font-medium uppercase text-muted-foreground">{item.type}</span>
@@ -196,22 +228,27 @@ export default function BoxDetail() {
               {item.type === 'text' && (
                 <p className="line-clamp-3 text-sm text-muted-foreground">{item.content}</p>
               )}
-              {(item.type === 'image' || item.type === 'video') && item.file_url && (
+              {(item.type === 'image') && item.file_url && (
                 <img src={item.file_url} alt={item.title} className="mt-2 aspect-video w-full rounded-lg object-cover" />
               )}
+              {item.type === 'video' && item.file_url && (
+                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-lg bg-muted">
+                  <span className="text-3xl">▶️</span>
+                </div>
+              )}
               {item.type === 'youtube' && item.content && (
-                <div className="mt-2 aspect-video overflow-hidden rounded-lg">
-                  <iframe
-                    src={`https://www.youtube.com/embed/${extractYouTubeId(item.content)}`}
-                    className="h-full w-full"
-                    allowFullScreen
-                  />
+                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-lg bg-muted">
+                  <span className="text-3xl">▶️</span>
                 </div>
               )}
               {item.type === 'link' && (
-                <a href={item.content} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-primary hover:underline">
-                  {item.content}
-                </a>
+                <p className="mt-2 text-sm text-primary truncate">{item.content}</p>
+              )}
+              {item.type === 'pdf' && (
+                <div className="mt-2 flex items-center gap-2 rounded-lg bg-muted p-3">
+                  <span className="text-2xl">📄</span>
+                  <span className="text-xs text-muted-foreground">PDF 문서 · 클릭하여 보기</span>
+                </div>
               )}
             </div>
           ))}
@@ -282,11 +319,14 @@ export default function BoxDetail() {
           </div>
         </div>
       )}
+
+      {/* Item Detail Modal */}
+      <ItemDetailModal
+        item={selectedItem}
+        open={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+        lang={lang}
+      />
     </div>
   );
-}
-
-function extractYouTubeId(url: string): string {
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]+)/);
-  return match?.[1] || url;
 }
