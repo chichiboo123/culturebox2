@@ -13,6 +13,7 @@ interface AppContextType {
   isAdmin: boolean;
   setIsAdmin: (v: boolean) => void;
   schools: School[];
+  refreshSchools: () => void;
   theme: string;
   setTheme: (theme: string) => void;
   logout: () => void;
