@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ItemDetailModal from '@/components/ItemDetailModal';
-import { ArrowLeft, Send, Package, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Send, Package, MessageCircle, Paperclip, X } from 'lucide-react';
 
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +29,8 @@ export default function BoxDetail() {
   const [socialName, setSocialName] = useState(user?.name || '');
   const [socialText, setSocialText] = useState('');
   const [socialMedia, setSocialMedia] = useState('');
+  const [socialFile, setSocialFile] = useState<File | null>(null);
+  const [socialFilePreview, setSocialFilePreview] = useState<string>('');
 
   useEffect(() => {
     if (!id) return;
@@ -75,15 +77,34 @@ export default function BoxDetail() {
 
   const handlePostMessage = async () => {
     if (!socialText.trim() || !socialName.trim()) return;
+    const mediaUrl = socialFilePreview || socialMedia.trim() || undefined;
     const msg = await API.addMessage({
       box_id: box.id,
       user_name: socialName.trim(),
       content: socialText.trim(),
-      media_url: socialMedia.trim() || undefined,
+      media_url: mediaUrl,
     });
     setMessages([...messages, msg]);
     setSocialText('');
     setSocialMedia('');
+    setSocialFile(null);
+    setSocialFilePreview('');
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSocialFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSocialFilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveFile = () => {
+    setSocialFile(null);
+    setSocialFilePreview('');
   };
 
   const renderItemIcon = (type: string) => {
@@ -308,8 +329,12 @@ export default function BoxDetail() {
               rows={3}
               className="mb-3 rounded-2xl border-border/60 resize-none"
             />
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-1 items-center gap-2">
+                <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  <Paperclip className="h-4 w-4" />
+                  <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+                </label>
                 <span className="text-muted-foreground">🔗</span>
                 <Input
                   value={socialMedia}
@@ -327,6 +352,17 @@ export default function BoxDetail() {
                 {t('social.post.btn')}
               </Button>
             </div>
+            {socialFilePreview && (
+              <div className="mt-3 relative inline-block">
+                <img src={socialFilePreview} alt="preview" className="max-h-32 rounded-2xl object-cover" />
+                <button
+                  onClick={handleRemoveFile}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
             <p className="mt-2 text-[11px] text-muted-foreground/70">{t('social.name.label')}</p>
           </div>
 
