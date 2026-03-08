@@ -12,20 +12,31 @@ import { toast } from 'sonner';
 
 type AdminTab = 'schools' | 'boxes' | 'users' | 'messages';
 
-// ─── School Form ────────────────────────────────────────
-function SchoolForm({ schools: existingSchools, onSave, onClose }: { schools: School[]; onSave: (s: School) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ name_ko: '', name_en: '', name_ja: '', country: 'KR', logo_url: '' });
+// ─── School Form (Create / Edit) ────────────────────────
+function SchoolForm({ school, onSave, onClose }: { school?: School; onSave: (s: School) => void; onClose: () => void }) {
+  const [form, setForm] = useState({
+    name_ko: school?.name_ko || '',
+    name_en: school?.name_en || '',
+    name_ja: school?.name_ja || '',
+    country: school?.country || 'KR',
+    logo_url: school?.logo_url || '',
+  });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!form.name_ko && !form.name_en) { toast.error('학교 이름을 입력하세요'); return; }
     setSaving(true);
     try {
-      const result = await API.createSchool({ ...form, id: generateId('sch') });
+      let result: School;
+      if (school) {
+        result = await API.updateSchool({ id: school.id, ...form });
+      } else {
+        result = await API.createSchool({ ...form, id: generateId('sch') });
+      }
       onSave(result);
-      toast.success('학교가 추가되었습니다');
+      toast.success(school ? '학교가 수정되었습니다' : '학교가 추가되었습니다');
       onClose();
-    } catch { toast.error('학교 추가 실패'); }
+    } catch { toast.error('저장 실패'); }
     setSaving(false);
   };
 
@@ -54,7 +65,7 @@ function SchoolForm({ schools: existingSchools, onSave, onClose }: { schools: Sc
       <div className="flex gap-2 pt-2">
         <Button onClick={onClose} variant="outline" className="flex-1 rounded-2xl">취소</Button>
         <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-2xl gradient-primary text-primary-foreground btn-bounce">
-          {saving ? '저장 중...' : '추가'}
+          {saving ? '저장 중...' : school ? '수정' : '추가'}
         </Button>
       </div>
     </div>
@@ -169,20 +180,30 @@ function BoxForm({ box, schools, onSave, onClose }: { box?: Box; schools: School
   );
 }
 
-// ─── User Form ──────────────────────────────────────────
-function UserForm({ schools, onSave, onClose }: { schools: School[]; onSave: (u: any) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', school_id: schools[0]?.id || '', role: 'student' });
+// ─── User Form (Create / Edit) ──────────────────────────
+function UserForm({ user, schools, onSave, onClose }: { user?: any; schools: School[]; onSave: (u: any) => void; onClose: () => void }) {
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    school_id: user?.school_id || schools[0]?.id || '',
+    role: user?.role || 'student',
+  });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!form.name) { toast.error('이름을 입력하세요'); return; }
     setSaving(true);
     try {
-      const result = await API.createUser({ ...form, id: generateId('usr') });
+      let result: any;
+      if (user) {
+        result = await API.updateUser({ id: user.id, ...form });
+      } else {
+        result = await API.createUser({ ...form, id: generateId('usr') });
+      }
       onSave(result);
-      toast.success('사용자가 추가되었습니다');
+      toast.success(user ? '사용자가 수정되었습니다' : '사용자가 추가되었습니다');
       onClose();
-    } catch { toast.error('추가 실패'); }
+    } catch { toast.error('저장 실패'); }
     setSaving(false);
   };
 
@@ -216,7 +237,7 @@ function UserForm({ schools, onSave, onClose }: { schools: School[]; onSave: (u:
       <div className="flex gap-2 pt-2">
         <Button onClick={onClose} variant="outline" className="flex-1 rounded-2xl">취소</Button>
         <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-2xl gradient-primary text-primary-foreground btn-bounce">
-          {saving ? '저장 중...' : '추가'}
+          {saving ? '저장 중...' : user ? '수정' : '추가'}
         </Button>
       </div>
     </div>
