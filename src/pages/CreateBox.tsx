@@ -44,6 +44,7 @@ export default function CreateBox() {
   // Step 4
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [sendError, setSendError] = useState('');
 
   const handleItemFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,25 +81,36 @@ export default function CreateBox() {
   const handleSend = async () => {
     if (!boxName.trim()) return;
     setSending(true);
+    setSendError('');
+    setProgress(0);
 
-    const box = await API.createBox({
-      title: boxName,
-      description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
-      from_school_id: fromSchool,
-      to_school_id: toSchool || schools.find(s => s.id !== fromSchool)?.id || fromSchool,
-      created_by: user?.id || 'unknown',
-    });
+    try {
+      setProgress(5);
+      const box = await API.createBox({
+        title: boxName,
+        description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
+        from_school_id: fromSchool,
+        to_school_id: toSchool || schools.find(s => s.id !== fromSchool)?.id || fromSchool,
+        created_by: user?.id || 'unknown',
+      });
+      setProgress(15);
 
-    for (let i = 0; i < items.length; i++) {
-      setProgress(Math.round(((i + 1) / (items.length + 1)) * 80));
-      await API.addItem({ ...items[i], box_id: box.id });
+      for (let i = 0; i < items.length; i++) {
+        setProgress(15 + Math.round(((i + 1) / (items.length + 1)) * 65));
+        await API.addItem({ ...items[i], box_id: box.id });
+      }
+
+      setProgress(85);
+      await API.sendBox(box.id);
+      setProgress(100);
+
+      setTimeout(() => navigate('/explore'), 1500);
+    } catch (err: any) {
+      console.error('Send error:', err);
+      setSendError(err?.message || '발송 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setSending(false);
+      setProgress(0);
     }
-
-    setProgress(90);
-    await API.sendBox(box.id);
-    setProgress(100);
-
-    setTimeout(() => navigate('/explore'), 1000);
   };
 
   const steps = [
@@ -345,34 +357,50 @@ export default function CreateBox() {
       {/* Step 4: Send */}
       {step === 4 && (
         <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm animate-scale-in">
-          <div className="mb-6 text-7xl animate-float">✈️</div>
-          <h3 className="mb-2 text-lg font-bold">
-            {sending ? '발송 중...' : '발송할 준비가 됐어요!'}
-          </h3>
           {sending ? (
             <div className="mx-auto max-w-xs">
+              {/* Animated vehicles */}
+              <div className="relative h-24 mb-4 overflow-hidden">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="text-5xl animate-vehicle-1">✈️</span>
+                </div>
+                <div className="absolute inset-0 flex items-center">
+                  <span className="text-5xl animate-vehicle-2">🚢</span>
+                </div>
+                <div className="absolute inset-0 flex items-center">
+                  <span className="text-5xl animate-vehicle-3">🚗</span>
+                </div>
+              </div>
+              <h3 className="mb-3 text-lg font-bold">발송 중...</h3>
               <div className="mx-auto h-3 w-full overflow-hidden rounded-full bg-muted">
                 <div className="h-full rounded-full gradient-primary transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
               </div>
               <p className="mt-3 text-sm font-semibold text-primary">{progress}%</p>
               {progress === 100 && (
-                <p className="mt-2 text-sm text-emerald-600 font-medium animate-pop-in">🎉 발송 완료!</p>
+                <p className="mt-2 text-sm font-medium animate-pop-in" style={{ color: 'hsl(var(--primary))' }}>🎉 발송 완료!</p>
               )}
             </div>
           ) : (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                <strong>{boxName}</strong>을(를) 보낼까요?
-              </p>
-              <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={() => setStep(3)} className="rounded-2xl gap-1.5 btn-bounce">
-                  <ArrowLeft className="h-4 w-4" /> {t('create.prev')}
-                </Button>
-                <Button size="lg" onClick={handleSend} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce gap-2">
-                  <Send className="h-4 w-4" /> 발송하기
-                </Button>
+            <>
+              <div className="mb-6 text-7xl animate-float">✈️</div>
+              <h3 className="mb-2 text-lg font-bold">발송할 준비가 됐어요!</h3>
+              {sendError && (
+                <p className="mb-3 text-sm text-destructive">{sendError}</p>
+              )}
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>{boxName}</strong>을(를) 보낼까요?
+                </p>
+                <div className="flex justify-center gap-3">
+                  <Button variant="outline" onClick={() => setStep(3)} className="rounded-2xl gap-1.5 btn-bounce">
+                    <ArrowLeft className="h-4 w-4" /> {t('create.prev')}
+                  </Button>
+                  <Button size="lg" onClick={handleSend} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce gap-2">
+                    <Send className="h-4 w-4" /> 발송하기
+                  </Button>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       )}
