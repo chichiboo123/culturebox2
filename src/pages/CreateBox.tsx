@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { API, generateId, getSchoolName, type Item } from '@/lib/api';
@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, ArrowRight, Plus, X, Check, Send, Package } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, X, Check, Send, Package, Upload } from 'lucide-react';
 
 type LocalItem = Omit<Item, 'id' | 'box_id' | 'created_by' | 'created_at'>;
 
 const itemTypes = [
   { type: 'text', icon: '📝', label: '텍스트' },
-  { type: 'image', icon: '🖼️', label: '이미지' },
+  { type: 'image', icon: '🖼️', label: '이미지/동영상' },
   { type: 'youtube', icon: '▶️', label: 'YouTube' },
   { type: 'link', icon: '🔗', label: '링크' },
   { type: 'pdf', icon: '📄', label: 'PDF' },
@@ -26,6 +26,7 @@ export default function CreateBox() {
 
   // Step 1
   const [boxName, setBoxName] = useState('');
+  const [creators, setCreators] = useState('');
   const [boxDesc, setBoxDesc] = useState('');
   const [fromSchool, setFromSchool] = useState(user?.school_id || schools[0]?.id || '');
   const [toSchool, setToSchool] = useState('');
@@ -37,10 +38,24 @@ export default function CreateBox() {
   const [itemTitle, setItemTitle] = useState('');
   const [itemContent, setItemContent] = useState('');
   const [itemUrl, setItemUrl] = useState('');
+  const [itemFilePreview, setItemFilePreview] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Step 4
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const handleItemFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setItemFilePreview(dataUrl);
+      setItemUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const saveItem = () => {
     if (!itemTitle.trim()) return;
@@ -55,6 +70,7 @@ export default function CreateBox() {
     setItemTitle('');
     setItemContent('');
     setItemUrl('');
+    setItemFilePreview('');
   };
 
   const removeItem = (idx: number) => {
@@ -67,7 +83,7 @@ export default function CreateBox() {
 
     const box = await API.createBox({
       title: boxName,
-      description: boxDesc,
+      description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
       from_school_id: fromSchool,
       to_school_id: toSchool || schools.find(s => s.id !== fromSchool)?.id || fromSchool,
       created_by: user?.id || 'unknown',
@@ -131,6 +147,10 @@ export default function CreateBox() {
               <Input value={boxName} onChange={e => setBoxName(e.target.value)} placeholder={t('create.boxname.placeholder')} className="mt-1.5 rounded-2xl" />
             </div>
             <div>
+              <Label className="text-sm font-semibold">👥 만든 사람들</Label>
+              <Input value={creators} onChange={e => setCreators(e.target.value)} placeholder="예: 김철수, 이영희, 박민수" className="mt-1.5 rounded-2xl" />
+            </div>
+            <div>
               <Label className="text-sm font-semibold">{t('create.desc')}</Label>
               <Textarea value={boxDesc} onChange={e => setBoxDesc(e.target.value)} placeholder={t('create.desc.placeholder')} className="mt-1.5 rounded-2xl resize-none" rows={3} />
             </div>
@@ -176,7 +196,7 @@ export default function CreateBox() {
               {itemTypes.map(it => (
                 <button
                   key={it.type}
-                  onClick={() => { setItemType(it.type); setShowItemForm(true); }}
+                  onClick={() => { setItemType(it.type); setShowItemForm(true); setItemFilePreview(''); setItemUrl(''); }}
                   className="flex items-center gap-1 rounded-xl bg-muted/60 px-3 py-1.5 text-xs font-medium transition-all hover:bg-muted hover:shadow-sm btn-bounce"
                 >
                   {it.icon} {it.label}
@@ -196,14 +216,62 @@ export default function CreateBox() {
                   <Label className="text-sm font-semibold">내용</Label>
                   <Textarea value={itemContent} onChange={e => setItemContent(e.target.value)} placeholder="내용" className="mt-1 rounded-xl resize-none" rows={3} />
                 </div>
-                {(itemType === 'image' || itemType === 'youtube' || itemType === 'link' || itemType === 'pdf') && (
+
+                {/* Image/Video: file upload + URL */}
+                {itemType === 'image' && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">파일 업로드 또는 URL</Label>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5" /> 파일 선택
+                      </Button>
+                      <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleItemFileSelect} />
+                      <Input value={itemFilePreview ? '' : itemUrl} onChange={e => { setItemUrl(e.target.value); setItemFilePreview(''); }} placeholder="또는 URL 입력" className="rounded-xl" disabled={!!itemFilePreview} />
+                    </div>
+                    {itemFilePreview && (
+                      <div className="relative inline-block">
+                        <img src={itemFilePreview} alt="preview" className="max-h-32 rounded-xl object-cover" />
+                        <button onClick={() => { setItemFilePreview(''); setItemUrl(''); }} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* PDF: file upload + URL */}
+                {itemType === 'pdf' && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">파일 업로드 또는 URL</Label>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="h-3.5 w-3.5" /> 파일 선택
+                      </Button>
+                      <input ref={fileInputRef} type="file" accept=".pdf" className="hidden" onChange={handleItemFileSelect} />
+                      <Input value={itemFilePreview ? '' : itemUrl} onChange={e => { setItemUrl(e.target.value); setItemFilePreview(''); }} placeholder="또는 URL 입력" className="rounded-xl" disabled={!!itemFilePreview} />
+                    </div>
+                    {itemFilePreview && (
+                      <div className="flex items-center gap-2 rounded-xl bg-muted p-3">
+                        <span className="text-xl">📄</span>
+                        <span className="text-sm font-medium">PDF 파일 선택됨</span>
+                        <button onClick={() => { setItemFilePreview(''); setItemUrl(''); }} className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* YouTube / Link: URL only */}
+                {(itemType === 'youtube' || itemType === 'link') && (
                   <div>
                     <Label className="text-sm font-semibold">URL</Label>
                     <Input value={itemUrl} onChange={e => setItemUrl(e.target.value)} placeholder="https://..." className="mt-1 rounded-xl" />
                   </div>
                 )}
+
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button variant="ghost" size="sm" onClick={() => setShowItemForm(false)} className="rounded-xl">
+                  <Button variant="ghost" size="sm" onClick={() => { setShowItemForm(false); setItemFilePreview(''); }} className="rounded-xl">
                     <X className="mr-1 h-3.5 w-3.5" /> {t('common.cancel')}
                   </Button>
                   <Button size="sm" onClick={saveItem} className="rounded-xl gradient-primary text-primary-foreground shadow-sm">
