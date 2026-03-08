@@ -2,87 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 40 33% 98%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 37 90% 44%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 160 59% 40%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 36 50% 93%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 330 81% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 30 18% 88%;
+    --input: 30 18% 88%;
+    --ring: 37 90% 44%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Culture Box specific */
+    --color-primary-light: 43 96% 56%;
+    --color-accent-blue: 217 91% 60%;
+    --color-surface-warm: 40 20% 97%;
+    --color-surface-hover: 33 14% 92%;
+    --color-border-light: 33 17% 92%;
+    --color-hero-title: 28 77% 31%;
+    --color-hero-subtitle: 28 65% 38%;
+    --color-hero-bg: 48 96% 89%;
+
+    /* Box status */
+    --color-draft: 220 9% 63%;
+    --color-packed: 43 96% 56%;
+    --color-sent: 217 91% 60%;
+    --color-arrived: 37 90% 44%;
+    --color-opened: 160 59% 40%;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 7%;
+    --foreground: 40 20% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 40 20% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 40 20% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 37 90% 50%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 160 59% 35%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 330 81% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 37 90% 50%;
+
+    --color-hero-bg: 0 0% 12%;
+    --color-hero-title: 37 90% 60%;
+    --color-hero-subtitle: 37 70% 55%;
+    --color-surface-warm: 0 0% 9%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -98,8 +112,83 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+}
+
+/* Theme variants */
+.theme-blue {
+  --primary: 217 91% 69%;
+  --primary-foreground: 0 0% 10%;
+  --ring: 217 91% 69%;
+  --color-hero-bg: 214 95% 93%;
+  --color-hero-title: 217 71% 45%;
+  --color-hero-subtitle: 217 60% 55%;
+}
+
+.theme-green {
+  --primary: 160 64% 55%;
+  --primary-foreground: 0 0% 10%;
+  --ring: 160 64% 55%;
+  --color-hero-bg: 152 76% 91%;
+  --color-hero-title: 160 50% 30%;
+  --color-hero-subtitle: 160 40% 40%;
+}
+
+.theme-pink {
+  --primary: 330 86% 70%;
+  --primary-foreground: 0 0% 10%;
+  --ring: 330 86% 70%;
+  --color-hero-bg: 330 100% 95%;
+  --color-hero-title: 330 60% 35%;
+  --color-hero-subtitle: 330 50% 45%;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-2deg); }
+  75% { transform: translateX(5px) rotate(2deg); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delay-1 {
+  animation: float 7s ease-in-out 1s infinite;
+}
+
+.animate-float-delay-2 {
+  animation: float 8s ease-in-out 2s infinite;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
 }
