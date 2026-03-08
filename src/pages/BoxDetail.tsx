@@ -287,11 +287,27 @@ export default function BoxDetail() {
                   <span className="text-4xl opacity-60">▶️</span>
                 </div>
               )}
-              {item.type === 'youtube' && (
-                <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-gradient-to-br from-red-50 to-red-100">
-                  <span className="text-4xl">▶️</span>
-                </div>
-              )}
+              {item.type === 'youtube' && (() => {
+                const src = item.content || item.file_url || '';
+                const patterns = [
+                  /(?:youtube\.com\/watch\?v=)([\w-]+)/,
+                  /(?:youtube\.com\/embed\/)([\w-]+)/,
+                  /(?:youtu\.be\/)([\w-]+)/,
+                  /(?:youtube\.com\/shorts\/)([\w-]+)/,
+                ];
+                let vid: string | null = null;
+                for (const p of patterns) { const m = src.match(p); if (m?.[1]) { vid = m[1]; break; } }
+                if (!vid && /^[\w-]{11}$/.test(src.trim())) vid = src.trim();
+                return vid ? (
+                  <div className="mt-2 aspect-video w-full overflow-hidden rounded-2xl">
+                    <iframe src={`https://www.youtube.com/embed/${vid}`} className="h-full w-full" allowFullScreen title={item.title} />
+                  </div>
+                ) : (
+                  <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-gradient-to-br from-red-50 to-red-100">
+                    <span className="text-4xl">▶️</span>
+                  </div>
+                );
+              })()}
               {item.type === 'link' && (
                 <p className="mt-2 truncate text-sm text-primary">{item.content}</p>
               )}
