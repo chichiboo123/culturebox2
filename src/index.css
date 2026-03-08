@@ -238,19 +238,15 @@
 .animate-item-reveal { animation: itemReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .animate-pop-in { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-/* Vehicle animations for sending - one at a time, cycling */
+/* Vehicle animations for sending - one at a time in center */
 @keyframes vehicleCycle {
-  0% { transform: translateX(-120%); opacity: 0; }
-  8% { opacity: 1; transform: translateX(-30%); }
-  15% { opacity: 1; transform: translateX(0%); }
-  25% { opacity: 1; transform: translateX(30%); }
-  30% { transform: translateX(120%); opacity: 0; }
-  100% { transform: translateX(120%); opacity: 0; }
+  0%, 30%, 100% { opacity: 0; transform: scale(0.88); }
+  8%, 22% { opacity: 1; transform: scale(1); }
 }
 
-.animate-vehicle-1 { animation: vehicleCycle 6s ease-in-out 0s infinite; }
-.animate-vehicle-2 { animation: vehicleCycle 6s ease-in-out 2s infinite; }
-.animate-vehicle-3 { animation: vehicleCycle 6s ease-in-out 4s infinite; }
+.animate-vehicle-1 { animation: vehicleCycle 6s ease-in-out 0s infinite both; }
+.animate-vehicle-2 { animation: vehicleCycle 6s ease-in-out 2s infinite both; }
+.animate-vehicle-3 { animation: vehicleCycle 6s ease-in-out 4s infinite both; }
 
 /* ===== Utility Classes ===== */
 .glass {

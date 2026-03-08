@@ -98,8 +98,9 @@ export default function CreateBox() {
       setProgress(15);
 
       for (let i = 0; i < items.length; i++) {
-        const progressBase = 15 + Math.round(((i) / (items.length + 1)) * 65);
-        setProgress(progressBase);
+        const itemStart = 15 + Math.round((i / (items.length + 1)) * 65);
+        const itemEnd = 15 + Math.round(((i + 1) / (items.length + 1)) * 65);
+        setProgress(itemStart);
 
         const item = { ...items[i] };
 
@@ -108,7 +109,10 @@ export default function CreateBox() {
           try {
             console.log(`Uploading file for item ${i}...`);
             const ext = item.type === 'pdf' ? '.pdf' : '.img';
-            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`);
+            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`, (uploadPercent) => {
+              const rangedProgress = itemStart + Math.round((uploadPercent / 100) * (itemEnd - itemStart));
+              setProgress(rangedProgress);
+            });
             if (driveUrl) {
               item.file_url = driveUrl;
             } else {
@@ -121,7 +125,7 @@ export default function CreateBox() {
           }
         }
 
-        setProgress(15 + Math.round(((i + 1) / (items.length + 1)) * 65));
+        setProgress(itemEnd);
         console.log(`Adding item ${i}: ${item.title}`);
         await API.addItem({ ...item, box_id: box.id });
       }
