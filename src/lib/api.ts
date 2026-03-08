@@ -76,35 +76,24 @@ export interface User {
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec';
 
 async function fetchGAS(action: string, params: Record<string, any> = {}) {
-  const serialized: Record<string, string> = {};
+  // GAS does not support cross-origin POST (302 redirect drops body).
+  // Always use GET. Skip large data fields (e.g. DataURLs) that exceed URL limits.
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null) {
-      serialized[k] = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    if (v === undefined || v === null) return;
+    const strVal = typeof v === 'object' ? JSON.stringify(v) : String(v);
+    // Skip DataURLs and very large values (>2000 chars) - they can't fit in GET params
+    if (strVal.length > 2000) {
+      console.warn(`Skipping large param "${k}" (${strVal.length} chars) - too large for GET`);
+      return;
     }
+    url.searchParams.set(k, strVal);
   });
 
-  const totalLength = Object.values(serialized).reduce((sum, v) => sum + v.length, 0);
-  const usePOST = totalLength > 2000;
-
   try {
-    let response: Response;
-    if (usePOST) {
-      // GAS redirects POST to GET (302), so we use redirect: 'follow'
-      // and send JSON body that doPost will parse
-      const url = new URL(GAS_URL);
-      response = await fetch(url.toString(), {
-        method: 'POST',
-        redirect: 'follow',
-        body: JSON.stringify({ action, ...serialized }),
-      });
-    } else {
-      const url = new URL(GAS_URL);
-      url.searchParams.set('action', action);
-      Object.entries(serialized).forEach(([k, v]) => {
-        url.searchParams.set(k, v);
-      });
-      response = await fetch(url.toString());
-    }
+    const response = await fetch(url.toString());
     const data = await response.json();
     if (data.error) throw new Error(data.error);
     return data.result;
