@@ -96,8 +96,26 @@ export default function CreateBox() {
       setProgress(15);
 
       for (let i = 0; i < items.length; i++) {
+        const progressBase = 15 + Math.round(((i) / (items.length + 1)) * 65);
+        setProgress(progressBase);
+
+        const item = { ...items[i] };
+
+        // If file_url is a DataURL, upload to Google Drive first
+        if (item.file_url && item.file_url.startsWith('data:')) {
+          setProgress(progressBase + 5);
+          try {
+            const ext = item.type === 'pdf' ? '.pdf' : '.img';
+            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`);
+            item.file_url = driveUrl;
+          } catch (uploadErr) {
+            console.warn('File upload failed, saving item without file:', uploadErr);
+            item.file_url = undefined;
+          }
+        }
+
         setProgress(15 + Math.round(((i + 1) / (items.length + 1)) * 65));
-        await API.addItem({ ...items[i], box_id: box.id });
+        await API.addItem({ ...item, box_id: box.id });
       }
 
       setProgress(85);
