@@ -12,20 +12,31 @@ import { toast } from 'sonner';
 
 type AdminTab = 'schools' | 'boxes' | 'users' | 'messages';
 
-// ─── School Form ────────────────────────────────────────
-function SchoolForm({ schools: existingSchools, onSave, onClose }: { schools: School[]; onSave: (s: School) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ name_ko: '', name_en: '', name_ja: '', country: 'KR', logo_url: '' });
+// ─── School Form (Create / Edit) ────────────────────────
+function SchoolForm({ school, onSave, onClose }: { school?: School; onSave: (s: School) => void; onClose: () => void }) {
+  const [form, setForm] = useState({
+    name_ko: school?.name_ko || '',
+    name_en: school?.name_en || '',
+    name_ja: school?.name_ja || '',
+    country: school?.country || 'KR',
+    logo_url: school?.logo_url || '',
+  });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!form.name_ko && !form.name_en) { toast.error('학교 이름을 입력하세요'); return; }
     setSaving(true);
     try {
-      const result = await API.createSchool({ ...form, id: generateId('sch') });
+      let result: School;
+      if (school) {
+        result = await API.updateSchool({ id: school.id, ...form });
+      } else {
+        result = await API.createSchool({ ...form, id: generateId('sch') });
+      }
       onSave(result);
-      toast.success('학교가 추가되었습니다');
+      toast.success(school ? '학교가 수정되었습니다' : '학교가 추가되었습니다');
       onClose();
-    } catch { toast.error('학교 추가 실패'); }
+    } catch { toast.error('저장 실패'); }
     setSaving(false);
   };
 
@@ -54,7 +65,7 @@ function SchoolForm({ schools: existingSchools, onSave, onClose }: { schools: Sc
       <div className="flex gap-2 pt-2">
         <Button onClick={onClose} variant="outline" className="flex-1 rounded-2xl">취소</Button>
         <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-2xl gradient-primary text-primary-foreground btn-bounce">
-          {saving ? '저장 중...' : '추가'}
+          {saving ? '저장 중...' : school ? '수정' : '추가'}
         </Button>
       </div>
     </div>
@@ -169,20 +180,30 @@ function BoxForm({ box, schools, onSave, onClose }: { box?: Box; schools: School
   );
 }
 
-// ─── User Form ──────────────────────────────────────────
-function UserForm({ schools, onSave, onClose }: { schools: School[]; onSave: (u: any) => void; onClose: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', school_id: schools[0]?.id || '', role: 'student' });
+// ─── User Form (Create / Edit) ──────────────────────────
+function UserForm({ user, schools, onSave, onClose }: { user?: any; schools: School[]; onSave: (u: any) => void; onClose: () => void }) {
+  const [form, setForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    school_id: user?.school_id || schools[0]?.id || '',
+    role: user?.role || 'student',
+  });
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     if (!form.name) { toast.error('이름을 입력하세요'); return; }
     setSaving(true);
     try {
-      const result = await API.createUser({ ...form, id: generateId('usr') });
+      let result: any;
+      if (user) {
+        result = await API.updateUser({ id: user.id, ...form });
+      } else {
+        result = await API.createUser({ ...form, id: generateId('usr') });
+      }
       onSave(result);
-      toast.success('사용자가 추가되었습니다');
+      toast.success(user ? '사용자가 수정되었습니다' : '사용자가 추가되었습니다');
       onClose();
-    } catch { toast.error('추가 실패'); }
+    } catch { toast.error('저장 실패'); }
     setSaving(false);
   };
 
@@ -216,7 +237,7 @@ function UserForm({ schools, onSave, onClose }: { schools: School[]; onSave: (u:
       <div className="flex gap-2 pt-2">
         <Button onClick={onClose} variant="outline" className="flex-1 rounded-2xl">취소</Button>
         <Button onClick={handleSave} disabled={saving} className="flex-1 rounded-2xl gradient-primary text-primary-foreground btn-bounce">
-          {saving ? '저장 중...' : '추가'}
+          {saving ? '저장 중...' : user ? '수정' : '추가'}
         </Button>
       </div>
     </div>
@@ -234,8 +255,10 @@ export default function Admin() {
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogType, setDialogType] = useState<'school' | 'box' | 'user' | 'editBox'>('school');
+  const [dialogType, setDialogType] = useState<'school' | 'box' | 'user' | 'editBox' | 'editSchool' | 'editUser'>('school');
   const [editingBox, setEditingBox] = useState<Box | undefined>();
+  const [editingSchool, setEditingSchool] = useState<School | undefined>();
+  const [editingUser, setEditingUser] = useState<any>(undefined);
 
   const loadData = async () => {
     setLoading(true);
@@ -259,9 +282,11 @@ export default function Admin() {
 
   useEffect(() => { loadData(); }, []);
 
-  const openDialog = (type: 'school' | 'box' | 'user' | 'editBox', box?: Box) => {
+  const openDialog = (type: typeof dialogType, extra?: { box?: Box; school?: School; user?: any }) => {
     setDialogType(type);
-    setEditingBox(box);
+    setEditingBox(extra?.box);
+    setEditingSchool(extra?.school);
+    setEditingUser(extra?.user);
     setDialogOpen(true);
   };
 
@@ -318,8 +343,10 @@ export default function Admin() {
 
   const dialogTitles: Record<string, string> = {
     school: '학교 추가',
+    editSchool: '학교 수정',
     box: '박스 추가',
     user: '사용자 추가',
+    editUser: '사용자 수정',
     editBox: '박스 수정',
   };
 
@@ -412,9 +439,14 @@ export default function Admin() {
                             <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">{s.country}</span>
                           </td>
                           <td className="px-5 py-3.5 text-right">
-                            <button onClick={() => handleDeleteSchool(s.id)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
-                              <Trash2 className="h-3.5 w-3.5" /> 삭제
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => openDialog('editSchool', { school: s })} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
+                                <Pencil className="h-3.5 w-3.5" /> 수정
+                              </button>
+                              <button onClick={() => handleDeleteSchool(s.id)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
+                                <Trash2 className="h-3.5 w-3.5" /> 삭제
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -462,7 +494,7 @@ export default function Admin() {
                           </td>
                           <td className="px-5 py-3.5 text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => openDialog('editBox', b)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
+                              <button onClick={() => openDialog('editBox', { box: b })} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
                                 <Pencil className="h-3.5 w-3.5" /> 수정
                               </button>
                               <button onClick={() => handleDeleteBox(b.id)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
@@ -507,9 +539,14 @@ export default function Admin() {
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => handleDeleteUser(u.id)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
-                      <Trash2 className="h-3.5 w-3.5" /> 삭제
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => openDialog('editUser', { user: u })} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10">
+                        <Pencil className="h-3.5 w-3.5" /> 수정
+                      </button>
+                      <button onClick={() => handleDeleteUser(u.id)} className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10">
+                        <Trash2 className="h-3.5 w-3.5" /> 삭제
+                      </button>
+                    </div>
                   </div>
                 ))}
                 {users.length === 0 && (
@@ -568,10 +605,12 @@ export default function Admin() {
             <DialogTitle className="text-lg font-bold">{dialogTitles[dialogType]}</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">스프레드시트에 자동 반영됩니다</DialogDescription>
           </DialogHeader>
-          {dialogType === 'school' && <SchoolForm schools={schools} onSave={() => { if (refreshSchools) refreshSchools(); }} onClose={() => setDialogOpen(false)} />}
+          {dialogType === 'school' && <SchoolForm onSave={() => { refreshSchools(); }} onClose={() => setDialogOpen(false)} />}
+          {dialogType === 'editSchool' && <SchoolForm school={editingSchool} onSave={() => { refreshSchools(); }} onClose={() => setDialogOpen(false)} />}
           {dialogType === 'box' && <BoxForm schools={schools} onSave={b => setBoxes(prev => [...prev, b])} onClose={() => setDialogOpen(false)} />}
           {dialogType === 'editBox' && <BoxForm box={editingBox} schools={schools} onSave={b => setBoxes(prev => prev.map(x => x.id === b.id ? b : x))} onClose={() => setDialogOpen(false)} />}
           {dialogType === 'user' && <UserForm schools={schools} onSave={u => setUsers(prev => [...prev, u])} onClose={() => setDialogOpen(false)} />}
+          {dialogType === 'editUser' && <UserForm user={editingUser} schools={schools} onSave={u => setUsers(prev => prev.map(x => x.id === u.id ? u : x))} onClose={() => setDialogOpen(false)} />}
         </DialogContent>
       </Dialog>
     </div>

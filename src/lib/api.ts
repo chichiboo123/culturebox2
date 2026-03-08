@@ -115,7 +115,9 @@ export const API = {
   createUser: (data: any): Promise<any> => fetchGAS('createUser', data),
   deleteUser: (id: string): Promise<boolean> => fetchGAS('deleteUser', { id }),
   createSchool: (data: Partial<School>): Promise<School> => fetchGAS('createSchool', data),
+  updateSchool: (data: Partial<School> & { id: string }): Promise<School> => fetchGAS('updateSchool', data),
   deleteSchool: (id: string): Promise<boolean> => fetchGAS('deleteSchool', { id }),
+  updateUser: (data: any): Promise<any> => fetchGAS('updateUser', data),
 };
 
 // Helper functions
