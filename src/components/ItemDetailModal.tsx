@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { type Item, getItemTitle } from '@/lib/api';
 import type { Language } from '@/lib/i18n';
+import { ExternalLink } from 'lucide-react';
 
 interface Props {
   item: Item | null;
@@ -27,12 +28,10 @@ function extractYouTubeId(url: string): string {
 }
 
 function getGoogleDrivePreviewUrl(fileUrl: string): string | null {
-  // If it's already a Google Drive URL, extract file ID
   const driveMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (driveMatch) {
     return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
   }
-  // For any URL, use Google Docs viewer
   return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
 }
 
@@ -41,29 +40,41 @@ export default function ItemDetailModal({ item, open, onClose, lang }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-2xl">{renderItemIcon(item.type)}</span>
-            {getItemTitle(item, lang)}
-          </DialogTitle>
-          <DialogDescription className="text-xs uppercase tracking-wider">
-            {item.type}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl border-border/60 p-0">
+        {/* Header */}
+        <div className="sticky top-0 z-10 rounded-t-3xl border-b border-border bg-card/95 glass px-6 pt-6 pb-4">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-xl">
+                {renderItemIcon(item.type)}
+              </span>
+              <div>
+                <DialogTitle className="text-lg font-bold leading-snug">
+                  {getItemTitle(item, lang)}
+                </DialogTitle>
+                <DialogDescription className="text-[11px] uppercase tracking-wider font-bold">
+                  {item.type}
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
-        <div className="mt-4">
+        {/* Content */}
+        <div className="px-6 pb-6 pt-4">
           {item.type === 'text' && (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {item.content}
-            </p>
+            <div className="rounded-2xl bg-muted/30 p-5">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {item.content}
+              </p>
+            </div>
           )}
 
           {item.type === 'image' && item.file_url && (
             <img
               src={item.file_url}
               alt={getItemTitle(item, lang)}
-              className="w-full rounded-lg object-contain max-h-[60vh]"
+              className="w-full rounded-2xl object-contain max-h-[60vh]"
             />
           )}
 
@@ -71,12 +82,12 @@ export default function ItemDetailModal({ item, open, onClose, lang }: Props) {
             <video
               src={item.file_url}
               controls
-              className="w-full rounded-lg max-h-[60vh]"
+              className="w-full rounded-2xl max-h-[60vh]"
             />
           )}
 
           {item.type === 'youtube' && item.content && (
-            <div className="aspect-video overflow-hidden rounded-lg">
+            <div className="aspect-video overflow-hidden rounded-2xl shadow-sm">
               <iframe
                 src={`https://www.youtube.com/embed/${extractYouTubeId(item.content)}`}
                 className="h-full w-full"
@@ -91,15 +102,16 @@ export default function ItemDetailModal({ item, open, onClose, lang }: Props) {
               href={item.content}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary hover:underline"
+              className="flex items-center gap-2.5 rounded-2xl bg-primary/5 border border-primary/15 p-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
             >
-              🔗 {item.content}
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              <span className="truncate">{item.content}</span>
             </a>
           )}
 
           {item.type === 'pdf' && item.file_url && (
             <div className="space-y-3">
-              <div className="aspect-[4/5] overflow-hidden rounded-lg border border-border">
+              <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-border shadow-sm">
                 <iframe
                   src={getGoogleDrivePreviewUrl(item.file_url) || ''}
                   className="h-full w-full"
@@ -111,9 +123,10 @@ export default function ItemDetailModal({ item, open, onClose, lang }: Props) {
                 href={item.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                className="inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
               >
-                📥 원본 파일 열기
+                <ExternalLink className="h-3.5 w-3.5" />
+                원본 파일 열기
               </a>
             </div>
           )}

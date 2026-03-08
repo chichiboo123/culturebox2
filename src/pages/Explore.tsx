@@ -3,6 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { API, type Box, getSchoolName } from '@/lib/api';
 import BoxCard from '@/components/BoxCard';
 import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 const FILTERS = ['all', 'arrived', 'sent', 'opened'] as const;
 
@@ -28,33 +29,44 @@ export default function Explore() {
 
   return (
     <div className="container mx-auto max-w-[1100px] px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">{t('nav.explore')}</h1>
-        <Input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={t('explore.search')}
-          className="w-48"
-        />
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold animate-slide-up">📦 {t('nav.explore')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground animate-slide-up" style={{ animationDelay: '50ms' }}>
+          문화 박스를 탐색하고 새로운 이야기를 만나보세요
+        </p>
       </div>
 
-      {/* School banner */}
-      {!isAdmin && user && school && (
-        <div className="mb-6 rounded-xl bg-primary/5 p-3 text-center text-sm font-medium">
-          🏫 <strong>{getSchoolName(school, lang)}</strong>
+      {/* Search + School banner */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={t('explore.search')}
+            className="rounded-2xl border-border/60 pl-9"
+          />
         </div>
-      )}
+
+        {!isAdmin && user && school && (
+          <div className="flex items-center gap-2 rounded-2xl bg-primary/5 border border-primary/10 px-4 py-2 text-sm">
+            <span>🏫</span>
+            <span className="font-semibold">{getSchoolName(school, lang)}</span>
+          </div>
+        )}
+      </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-8 flex flex-wrap gap-2">
         {FILTERS.map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-2xl px-4 py-2 text-sm font-medium transition-all duration-200 ${
               filter === f
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                ? 'gradient-primary text-primary-foreground shadow-md'
+                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
             {t(`filter.${f}`)}
@@ -64,14 +76,17 @@ export default function Explore() {
 
       {/* Grid */}
       {boxes.length === 0 ? (
-        <div className="py-20 text-center">
-          <div className="text-5xl">📭</div>
-          <p className="mt-4 text-muted-foreground">{t('common.empty')}</p>
+        <div className="py-24 text-center animate-scale-in">
+          <div className="mb-4 text-6xl">📭</div>
+          <p className="text-lg font-medium text-muted-foreground">{t('common.empty')}</p>
+          <p className="mt-1 text-sm text-muted-foreground/70">필터를 변경하거나 새 박스를 만들어보세요</p>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {boxes.map(box => (
-            <BoxCard key={box.id} box={box} schools={schools} />
+          {boxes.map((box, i) => (
+            <div key={box.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
+              <BoxCard box={box} schools={schools} />
+            </div>
           ))}
         </div>
       )}
