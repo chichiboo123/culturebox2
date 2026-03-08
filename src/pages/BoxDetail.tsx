@@ -329,8 +329,12 @@ export default function BoxDetail() {
               rows={3}
               className="mb-3 rounded-2xl border-border/60 resize-none"
             />
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-1 items-center gap-2">
+                <label className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-xl bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                  <Paperclip className="h-4 w-4" />
+                  <input type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
+                </label>
                 <span className="text-muted-foreground">🔗</span>
                 <Input
                   value={socialMedia}
@@ -348,6 +352,17 @@ export default function BoxDetail() {
                 {t('social.post.btn')}
               </Button>
             </div>
+            {socialFilePreview && (
+              <div className="mt-3 relative inline-block">
+                <img src={socialFilePreview} alt="preview" className="max-h-32 rounded-2xl object-cover" />
+                <button
+                  onClick={handleRemoveFile}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
             <p className="mt-2 text-[11px] text-muted-foreground/70">{t('social.name.label')}</p>
           </div>
 
