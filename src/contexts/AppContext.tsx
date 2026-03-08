@@ -81,6 +81,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(false);
   }, [setIsAdmin]);
 
+  const refreshSchools = useCallback(() => {
+    API.getSchools().then(setSchools).catch(console.error);
+  }, []);
+
   const tFn = useCallback((key: string) => translate(key, lang), [lang]);
 
   return (
@@ -88,7 +92,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lang, setLang, t: tFn,
       user, setUser,
       isAdmin, setIsAdmin,
-      schools, theme, setTheme,
+      schools, refreshSchools, theme, setTheme,
       logout, adminLogout,
     }}>
       {children}
