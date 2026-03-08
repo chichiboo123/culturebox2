@@ -73,7 +73,7 @@ export interface User {
   lang_pref: Language;
 }
 
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxGqLy_4kPIQ9k-nBKKI-ZfhjDsOHT-E4QR1JuEPfu_h2AWdpfDDHvLmNsoKPpZUcvgzg/exec';
 
 async function fetchGAS(action: string, params: Record<string, any> = {}) {
   // GAS does not support cross-origin POST (302 redirect drops body).
