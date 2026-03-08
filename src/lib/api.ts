@@ -76,16 +76,35 @@ export interface User {
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbzFjDT3WUncXROqm2-SJ01Lg1L1K17b9Yvgx9W7BJEbmfCzultQxL0Er5zTkZgx8LI-/exec';
 
 async function fetchGAS(action: string, params: Record<string, any> = {}) {
-  const url = new URL(GAS_URL);
-  url.searchParams.set('action', action);
+  // Check if payload might be too large for GET (data URLs, etc.)
+  const serialized: Record<string, string> = {};
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined && v !== null) {
-      url.searchParams.set(k, typeof v === 'object' ? JSON.stringify(v) : String(v));
+      serialized[k] = typeof v === 'object' ? JSON.stringify(v) : String(v);
     }
   });
 
+  const totalLength = Object.values(serialized).reduce((sum, v) => sum + v.length, 0);
+  const usePOST = totalLength > 2000;
+
   try {
-    const response = await fetch(url.toString());
+    let response: Response;
+    if (usePOST) {
+      const url = new URL(GAS_URL);
+      url.searchParams.set('action', action);
+      response = await fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(serialized),
+      });
+    } else {
+      const url = new URL(GAS_URL);
+      url.searchParams.set('action', action);
+      Object.entries(serialized).forEach(([k, v]) => {
+        url.searchParams.set(k, v);
+      });
+      response = await fetch(url.toString());
+    }
     const data = await response.json();
     if (data.error) throw new Error(data.error);
     return data.result;
