@@ -86,6 +86,7 @@ export default function CreateBox() {
 
     try {
       setProgress(5);
+      console.log('Creating box...');
       const box = await API.createBox({
         title: boxName,
         description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
@@ -93,6 +94,7 @@ export default function CreateBox() {
         to_school_id: toSchool || schools.find(s => s.id !== fromSchool)?.id || fromSchool,
         created_by: user?.id || 'unknown',
       });
+      console.log('Box created:', box.id);
       setProgress(15);
 
       for (let i = 0; i < items.length; i++) {
@@ -101,13 +103,18 @@ export default function CreateBox() {
 
         const item = { ...items[i] };
 
-        // If file_url is a DataURL, upload to Google Drive first
+        // If file_url is a DataURL, try upload but don't block on failure
         if (item.file_url && item.file_url.startsWith('data:')) {
-          setProgress(progressBase + 5);
           try {
+            console.log(`Uploading file for item ${i}...`);
             const ext = item.type === 'pdf' ? '.pdf' : '.img';
             const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`);
-            item.file_url = driveUrl;
+            if (driveUrl) {
+              item.file_url = driveUrl;
+            } else {
+              console.warn('Upload returned empty URL, clearing file_url');
+              item.file_url = undefined;
+            }
           } catch (uploadErr) {
             console.warn('File upload failed, saving item without file:', uploadErr);
             item.file_url = undefined;
@@ -115,6 +122,7 @@ export default function CreateBox() {
         }
 
         setProgress(15 + Math.round(((i + 1) / (items.length + 1)) * 65));
+        console.log(`Adding item ${i}: ${item.title}`);
         await API.addItem({ ...item, box_id: box.id });
       }
 
@@ -377,15 +385,15 @@ export default function CreateBox() {
         <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm animate-scale-in">
           {sending ? (
             <div className="mx-auto max-w-xs">
-              {/* Animated vehicles */}
+            {/* Animated vehicles - one at a time, centered */}
               <div className="relative h-24 mb-4 overflow-hidden">
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-1">✈️</span>
                 </div>
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-2">🚢</span>
                 </div>
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-3">🚗</span>
                 </div>
               </div>
