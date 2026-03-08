@@ -377,15 +377,15 @@ export default function CreateBox() {
         <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-sm animate-scale-in">
           {sending ? (
             <div className="mx-auto max-w-xs">
-              {/* Animated vehicles */}
+            {/* Animated vehicles - one at a time, centered */}
               <div className="relative h-24 mb-4 overflow-hidden">
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-1">✈️</span>
                 </div>
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-2">🚢</span>
                 </div>
-                <div className="absolute inset-0 flex items-center">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-5xl animate-vehicle-3">🚗</span>
                 </div>
               </div>
