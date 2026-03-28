@@ -74,41 +74,6 @@ npm run build
   - 서브경로 배포가 필요하면 예: `VITE_BASE_PATH=/culturebox2/`
 - `BrowserRouter`는 `import.meta.env.BASE_URL`를 basename으로 사용합니다.
 
-## 관리자 보안 설정
-
-관리자 경로(`/admin`)는 **관리자 세션(isAdmin) 전용**이며, 로그인 시 아래 환경변수를 사용합니다.
-
-```bash
-cp .env.example .env
-# .env 파일 수정
-VITE_ADMIN_USERNAME=관리자아이디
-VITE_ADMIN_PASSWORD=관리자비밀번호
-```
-
-> 환경변수가 설정되지 않으면 관리자 로그인이 비활성화됩니다.
-
-### 관리자 로그인 비활성화 오류 해결
-
-관리자 로그인 창에 `VITE_ADMIN_USERNAME / VITE_ADMIN_PASSWORD 환경변수가 설정되지 않았습니다.`가 표시되면,
-배포 환경에 아래 값을 추가한 뒤 **다시 빌드/배포**해야 합니다.
-
-```bash
-VITE_ADMIN_USERNAME=master
-VITE_ADMIN_PASSWORD=원하는_강한_비밀번호
-```
-
-- 로컬 개발: 프로젝트 루트 `.env` 파일에 설정
-- 배포 환경(예: Vercel/Netlify/Cloudflare): 프로젝트 환경변수에 동일하게 등록
-
-주요 배포 서비스 입력 위치:
-- **Vercel**: Project → Settings → Environment Variables
-- **Netlify**: Site configuration → Environment variables
-- **Cloudflare Pages**: Project → Settings → Variables and Secrets (Production/Preview 각각 설정)
-- **GitHub Actions 배포**: Repository → Settings → Secrets and variables → Actions
-- 등록 후 반드시 재배포(또는 재시작)
-
-> 참고: `VITE_` 접두사의 값은 클라이언트 번들에 포함되므로, 장기적으로는 서버측 인증 API로 이전하는 것을 권장합니다.
-
 ## 아키텍처 상세 문서
 
 자세한 구조 분석은 아래 문서를 참고하세요.
