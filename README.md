@@ -1,4 +1,4 @@
-# Culture Box
+# Culture Box 2
 
 학교 간 문화 교류를 위한 디지털 박스 플랫폼입니다.  
 학생/교사가 문화 콘텐츠(텍스트, 이미지, 영상, 링크, PDF)를 박스에 담아 다른 학교로 보내고, 도착한 박스를 열어 메시지로 소통할 수 있습니다.
@@ -74,11 +74,27 @@ npm run build
   - 서브경로 배포가 필요하면 예: `VITE_BASE_PATH=/culturebox2/`
 - `BrowserRouter`는 `import.meta.env.BASE_URL`를 basename으로 사용합니다.
 
+## 관리자 보안 설정
+
+이제 관리자 로그인은 프런트의 정적 비밀값 비교가 아니라 **GAS 서버의 `adminLogin` 액션**으로 검증합니다.
+
+운영 설정 순서:
+1. Apps Script → Project Settings → Script properties
+2. 아래 키 등록
+   - `ADMIN_USERNAME`
+   - `ADMIN_PASSWORD`
+3. Web App 재배포
+
+> 정적 파일(`VITE_*`, `runtime-config.js`)에 비밀값을 넣는 방식은 운영 보안에 권장하지 않습니다.
+
 ## 아키텍처 상세 문서
 
 자세한 구조 분석은 아래 문서를 참고하세요.
 
 - `docs/APP_ARCHITECTURE_ANALYSIS.md`
+
+- 관리자 인증 보안 참고: `docs/SECURITY_ADMIN_AUTH.md`
+- 운영자 배포 체크리스트: `docs/DEPLOY_CHECKLIST_KR.md`
 
 ## 앱 미리보기 이미지
 

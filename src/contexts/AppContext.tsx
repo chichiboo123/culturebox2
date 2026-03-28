@@ -12,6 +12,8 @@ interface AppContextType {
   setUser: (user: User | null) => void;
   isAdmin: boolean;
   setIsAdmin: (v: boolean) => void;
+  adminToken: string | null;
+  setAdminToken: (token: string | null) => void;
   schools: School[];
   refreshSchools: () => void;
   theme: string;
@@ -32,20 +34,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return saved ? JSON.parse(saved) : null;
     } catch { return null; }
   });
+  const [adminToken, setAdminTokenState] = useState<string | null>(() => {
+    return localStorage.getItem('dcb_admin_token');
+  });
   const [isAdmin, setIsAdminState] = useState(() => {
-    return localStorage.getItem('dcb_admin_session') === 'active';
+    return localStorage.getItem('dcb_admin_session') === 'active' || !!localStorage.getItem('dcb_admin_token');
   });
   const [schools, setSchools] = useState<School[]>([]);
   const [theme, setThemeState] = useState(() => {
     return localStorage.getItem('dcb_theme') || 'default';
   });
 
-  // Load schools
   useEffect(() => {
     API.getSchools().then(setSchools).catch(console.error);
   }, []);
 
-  // Apply theme class
   useEffect(() => {
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
     if (theme !== 'default') document.body.classList.add('theme-' + theme);
@@ -63,10 +66,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     else localStorage.removeItem('dcb_user');
   }, []);
 
+  const setAdminToken = useCallback((token: string | null) => {
+    setAdminTokenState(token);
+    if (token) {
+      localStorage.setItem('dcb_admin_token', token);
+      setIsAdminState(true);
+      localStorage.setItem('dcb_admin_session', 'active');
+    } else {
+      localStorage.removeItem('dcb_admin_token');
+    }
+  }, []);
+
   const setIsAdmin = useCallback((v: boolean) => {
     setIsAdminState(v);
     if (v) localStorage.setItem('dcb_admin_session', 'active');
-    else localStorage.removeItem('dcb_admin_session');
+    else {
+      localStorage.removeItem('dcb_admin_session');
+      setAdminTokenState(null);
+      localStorage.removeItem('dcb_admin_token');
+    }
   }, []);
 
   const setTheme = useCallback((t: string) => {
@@ -78,8 +96,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [setUser]);
 
   const adminLogout = useCallback(() => {
+    if (adminToken) {
+      API.adminLogout(adminToken).catch(console.error);
+    }
+    setAdminToken(null);
     setIsAdmin(false);
-  }, [setIsAdmin]);
+  }, [adminToken, setAdminToken, setIsAdmin]);
 
   const refreshSchools = useCallback(() => {
     API.getSchools().then(setSchools).catch(console.error);
@@ -92,6 +114,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       lang, setLang, t: tFn,
       user, setUser,
       isAdmin, setIsAdmin,
+      adminToken, setAdminToken,
       schools, refreshSchools, theme, setTheme,
       logout, adminLogout,
     }}>
