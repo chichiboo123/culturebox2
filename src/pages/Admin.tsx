@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { API, type Box, type School, type Message, getSchoolName, getBoxTitle, generateId } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -246,7 +247,8 @@ function UserForm({ user, schools, onSave, onClose }: { user?: any; schools: Sch
 
 // ─── Main Admin Page ────────────────────────────────────
 export default function Admin() {
-  const { t, lang, schools, adminLogout, refreshSchools } = useApp();
+  const { t, lang, schools, isAdmin, adminLogout, refreshSchools } = useApp();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<AdminTab>('schools');
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -280,7 +282,13 @@ export default function Admin() {
     setLoading(false);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/', { replace: true });
+      return;
+    }
+    loadData();
+  }, [isAdmin, navigate]);
 
   const openDialog = (type: typeof dialogType, extra?: { box?: Box; school?: School; user?: any }) => {
     setDialogType(type);

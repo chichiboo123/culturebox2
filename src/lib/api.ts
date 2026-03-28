@@ -75,16 +75,29 @@ export interface User {
 
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxGqLy_4kPIQ9k-nBKKI-ZfhjDsOHT-E4QR1JuEPfu_h2AWdpfDDHvLmNsoKPpZUcvgzg/exec';
 
-async function fetchGAS(action: string, params: Record<string, any> = {}) {
-  // GAS does not support cross-origin POST (302 redirect drops body).
-  // Always use GET. Skip large data fields (e.g. DataURLs) that exceed URL limits.
+function getAuthContext() {
+  try {
+    const userRaw = localStorage.getItem('dcb_user');
+    const user = userRaw ? JSON.parse(userRaw) : null;
+    const adminToken = localStorage.getItem('dcb_admin_token');
+    return {
+      requester_school_id: user?.school_id || undefined,
+      admin_token: adminToken || undefined,
+    };
+  } catch {
+    return {} as { requester_school_id?: string; admin_token?: string };
+  }
+}
+
+async function fetchGAS(action: string, params: Record<string, any> = {}, includeAuth = true) {
   const url = new URL(GAS_URL);
   url.searchParams.set('action', action);
 
-  Object.entries(params).forEach(([k, v]) => {
+  const mergedParams = includeAuth ? { ...getAuthContext(), ...params } : params;
+
+  Object.entries(mergedParams).forEach(([k, v]) => {
     if (v === undefined || v === null) return;
     const strVal = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    // Skip DataURLs and very large values (>2000 chars) - they can't fit in GET params
     if (strVal.length > 2000) {
       console.warn(`Skipping large param "${k}" (${strVal.length} chars) - too large for GET`);
       return;
@@ -103,13 +116,7 @@ async function fetchGAS(action: string, params: Record<string, any> = {}) {
   }
 }
 
-// Upload a file (DataURL) to Google Drive via GAS and return the public URL
-async function uploadFileToDrive(
-  dataUrl: string,
-  fileName: string,
-  onProgress?: (percent: number) => void
-): Promise<string> {
-  // Extract base64 and mimeType from DataURL
+async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?: (percent: number) => void): Promise<string> {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
     console.warn('Invalid DataURL format, skipping upload');
@@ -118,22 +125,20 @@ async function uploadFileToDrive(
   const mimeType = match[1];
   const base64Data = match[2];
 
-  // Split base64 into chunks to send via GET (each chunk ~1500 chars to stay under URL limit)
   const CHUNK_SIZE = 1500;
   const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
 
-  // Step 1: Init upload
   const initResult = await fetchGAS('uploadFileInit', {
     fileName,
     mimeType,
     totalChunks: totalChunks.toString(),
   });
+
   const uploadId = initResult?.uploadId;
   if (!uploadId) throw new Error('Failed to init file upload');
 
   onProgress?.(0);
 
-  // Step 2: Send chunks
   for (let i = 0; i < totalChunks; i++) {
     const chunk = base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
     await fetchGAS('uploadFileChunk', {
@@ -146,13 +151,19 @@ async function uploadFileToDrive(
     onProgress?.(percent);
   }
 
-  // Step 3: Finalize - assemble and save to Drive
   const finalResult = await fetchGAS('uploadFileFinalize', { uploadId });
   onProgress?.(100);
   return finalResult?.fileUrl || '';
 }
 
 export const API = {
+  adminLogin: (username: string, password: string): Promise<{ ok: boolean; admin_token: string; expires_in_sec: number }> =>
+    fetchGAS('adminLogin', { username, password }, false),
+  adminLogout: (adminToken: string): Promise<{ ok: boolean }> =>
+    fetchGAS('adminLogout', { admin_token: adminToken }, false),
+  validateAdminSession: (adminToken: string): Promise<{ ok: boolean }> =>
+    fetchGAS('validateAdminSession', { admin_token: adminToken }, false),
+
   getSchools: (): Promise<School[]> => fetchGAS('getSchools'),
   getBoxes: (filters: { status?: string; search?: string; school_id?: string } = {}): Promise<Box[]> => fetchGAS('getBoxes', filters),
   getBox: (id: string): Promise<Box> => fetchGAS('getBox', { id }),
