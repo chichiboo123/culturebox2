@@ -99,6 +99,12 @@ VITE_ADMIN_PASSWORD=원하는_강한_비밀번호
 
 - 로컬 개발: 프로젝트 루트 `.env` 파일에 설정
 - 배포 환경(예: Vercel/Netlify/Cloudflare): 프로젝트 환경변수에 동일하게 등록
+
+주요 배포 서비스 입력 위치:
+- **Vercel**: Project → Settings → Environment Variables
+- **Netlify**: Site configuration → Environment variables
+- **Cloudflare Pages**: Project → Settings → Variables and Secrets (Production/Preview 각각 설정)
+- **GitHub Actions 배포**: Repository → Settings → Secrets and variables → Actions
 - 등록 후 반드시 재배포(또는 재시작)
 
 > 참고: `VITE_` 접두사의 값은 클라이언트 번들에 포함되므로, 장기적으로는 서버측 인증 API로 이전하는 것을 권장합니다.
