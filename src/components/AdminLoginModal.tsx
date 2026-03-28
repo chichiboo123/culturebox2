@@ -6,9 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Lock } from 'lucide-react';
 
+const ADMIN_USERNAME = import.meta.env.VITE_ADMIN_USERNAME as string | undefined;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD as string | undefined;
+const HAS_ADMIN_CREDENTIALS = Boolean(ADMIN_USERNAME && ADMIN_PASSWORD);
+
 function checkAdmin(u: string, p: string): boolean {
-  const d = (a: number[]) => a.map(n => String.fromCharCode(n)).join('');
-  return u === d([109,97,115,116,101,114]) && p === d([50,56,54,53]);
+  if (!HAS_ADMIN_CREDENTIALS) return false;
+  return u.trim() === ADMIN_USERNAME && p === ADMIN_PASSWORD;
 }
 
 interface Props {
@@ -70,10 +74,17 @@ export default function AdminLoginModal({ open, onOpenChange, onSuccess }: Props
             className="rounded-2xl"
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
           />
-          {error && <p className="text-xs font-medium text-destructive">아이디 또는 비밀번호가 올바르지 않습니다.</p>}
+          {!HAS_ADMIN_CREDENTIALS && (
+            <p className="text-xs font-medium text-destructive">VITE_ADMIN_USERNAME / VITE_ADMIN_PASSWORD 환경변수가 설정되지 않았습니다. 배포 환경변수 설정 후 다시 배포해 주세요.</p>
+          )}
+          {error && HAS_ADMIN_CREDENTIALS && <p className="text-xs font-medium text-destructive">아이디 또는 비밀번호가 올바르지 않습니다.</p>}
         </div>
 
-        <Button onClick={handleLogin} className="w-full rounded-2xl gradient-primary text-primary-foreground shadow-md btn-bounce gap-1.5">
+        <Button
+          onClick={handleLogin}
+          disabled={!HAS_ADMIN_CREDENTIALS}
+          className="w-full rounded-2xl gradient-primary text-primary-foreground shadow-md btn-bounce gap-1.5"
+        >
           <Lock className="h-4 w-4" />
           관리자 로그인
         </Button>
