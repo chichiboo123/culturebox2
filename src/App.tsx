@@ -35,7 +35,7 @@ function AppContent() {
     }
   }, [location.pathname, location.search, location.hash, navigate]);
 
-  // Protected routes: require login
+  // Protected routes: require login (user or admin)
   const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
   useEffect(() => {
     const requiresLogin = PROTECTED_PATHS.includes(location.pathname) || location.pathname.startsWith('/box/');
@@ -46,6 +46,14 @@ function AppContent() {
       navigate('/', { replace: true });
     }
   }, [location.pathname, user, isAdmin, navigate]);
+
+  // Admin route: require admin session only
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin') && !isAdmin) {
+      setAdminLoginOpen(true);
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, isAdmin, navigate]);
 
   const handleLoginSuccess = useCallback(() => {
     if (pendingPath) {

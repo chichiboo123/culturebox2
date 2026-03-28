@@ -69,10 +69,23 @@ npm run build
 
 ## 환경/배포 참고
 
-- Vite `base` 설정:
-  - 개발: `/`
-  - 프로덕션: `/culturebox2/`
+- Vite `base`는 `VITE_BASE_PATH` 환경변수로 제어됩니다. (기본값: `/`)
+  - 커스텀 도메인 루트 배포(예: `http://culturebox.chichiboo.link/`)는 기본값 `/` 사용
+  - 서브경로 배포가 필요하면 예: `VITE_BASE_PATH=/culturebox2/`
 - `BrowserRouter`는 `import.meta.env.BASE_URL`를 basename으로 사용합니다.
+
+## 관리자 보안 설정
+
+관리자 경로(`/admin`)는 **관리자 세션(isAdmin) 전용**이며, 로그인 시 아래 환경변수를 사용합니다.
+
+```bash
+cp .env.example .env
+# .env 파일 수정
+VITE_ADMIN_USERNAME=관리자아이디
+VITE_ADMIN_PASSWORD=관리자비밀번호
+```
+
+> 환경변수가 설정되지 않으면 관리자 로그인이 비활성화됩니다.
 
 ## 아키텍처 상세 문서
 
