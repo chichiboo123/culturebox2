@@ -210,6 +210,17 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
               </button>
             </div>
           )}
+          {isAdmin && (
+            <div className="mt-3 border-t border-border pt-3">
+              <div className="flex items-center gap-3 px-4 py-2">
+                <span className="text-sm font-bold text-primary">⚙️ 관리자</span>
+              </div>
+              <button onClick={() => { adminLogout(); navigate('/'); setMobileOpen(false); }} className="mt-1 flex w-full items-center gap-2 rounded-xl px-4 py-3 text-sm text-destructive hover:bg-destructive/10">
+                <LogOut className="h-4 w-4" />
+                {t('nav.logout')}
+              </button>
+            </div>
+          )}
           {!user && !isAdmin && (
             <button onClick={() => { onLoginClick(); setMobileOpen(false); }} className="mt-3 w-full rounded-2xl gradient-primary py-3 text-sm font-semibold text-primary-foreground shadow-md">
               {t('nav.login')}

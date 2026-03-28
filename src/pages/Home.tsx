@@ -154,10 +154,10 @@ export default function Home({ onLoginClick }: { onLoginClick: () => void }) {
                 <span className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                   🆕 NEW
                 </span>
-                <h2 className="mt-2 text-xl font-bold">최근 박스</h2>
+                <h2 className="mt-2 text-xl font-bold">{t('home.recent.boxes')}</h2>
               </div>
               <button onClick={() => navigate('/explore')} className="flex items-center gap-1 text-sm font-semibold text-primary transition-colors hover:text-primary/80 btn-bounce">
-                전체 보기
+                {t('home.view.all')}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>

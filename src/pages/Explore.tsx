@@ -33,7 +33,7 @@ export default function Explore() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold animate-slide-up">📦 {t('nav.explore')}</h1>
         <p className="mt-1 text-sm text-muted-foreground animate-slide-up" style={{ animationDelay: '50ms' }}>
-          문화 박스를 탐색하고 새로운 이야기를 만나보세요
+          {t('explore.subtitle')}
         </p>
       </div>
 
@@ -79,7 +79,7 @@ export default function Explore() {
         <div className="py-24 text-center animate-scale-in">
           <div className="mb-4 text-6xl">📭</div>
           <p className="text-lg font-medium text-muted-foreground">{t('common.empty')}</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">필터를 변경하거나 새 박스를 만들어보세요</p>
+          <p className="mt-1 text-sm text-muted-foreground/70">{t('explore.empty.hint')}</p>
         </div>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

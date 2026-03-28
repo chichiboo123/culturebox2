@@ -92,6 +92,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
           <Input
             value={name}
             onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
+            onKeyDown={e => e.key === 'Enter' && document.getElementById('login-code-input')?.focus()}
             placeholder={t('login.name')}
             className="rounded-2xl"
           />
@@ -119,8 +120,10 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold">{role === 'student' ? t('login.code') : t('login.teacher.code')}</Label>
           <Input
+            id="login-code-input"
             value={code}
             onChange={e => { setCode(e.target.value); setErrors(p => ({ ...p, code: '' })); }}
+            onKeyDown={e => e.key === 'Enter' && handleLogin()}
             placeholder={role === 'student' ? t('login.code') : t('login.teacher.code')}
             className="rounded-2xl font-mono tracking-widest"
             autoComplete="off"

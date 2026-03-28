@@ -75,20 +75,39 @@ export default function BoxDetail() {
     }, 1200);
   };
 
+  const [postingMsg, setPostingMsg] = useState(false);
+
   const handlePostMessage = async () => {
     if (!socialText.trim() || !socialName.trim()) return;
-    const mediaUrl = socialFilePreview || socialMedia.trim() || undefined;
-    const msg = await API.addMessage({
-      box_id: box.id,
-      user_name: socialName.trim(),
-      content: socialText.trim(),
-      media_url: mediaUrl,
-    });
-    setMessages([...messages, msg]);
-    setSocialText('');
-    setSocialMedia('');
-    setSocialFile(null);
-    setSocialFilePreview('');
+    setPostingMsg(true);
+    try {
+      // DataURL is too large for GET params — upload to Drive first
+      let mediaUrl = socialMedia.trim() || undefined;
+      if (socialFilePreview && socialFilePreview.startsWith('data:')) {
+        const uploaded = await API.uploadFile(socialFilePreview, socialFile?.name || 'attachment');
+        if (uploaded) mediaUrl = uploaded;
+      } else if (socialFilePreview) {
+        mediaUrl = socialFilePreview;
+      }
+
+      const msg = await API.addMessage({
+        box_id: box.id,
+        user_id: user?.id,
+        user_name: socialName.trim(),
+        user_school: user?.school_id,
+        content: socialText.trim(),
+        media_url: mediaUrl,
+      });
+      setMessages(prev => [...prev, msg]);
+      setSocialText('');
+      setSocialMedia('');
+      setSocialFile(null);
+      setSocialFilePreview('');
+    } catch (e) {
+      console.error('Message post failed:', e);
+    } finally {
+      setPostingMsg(false);
+    }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,7 +191,7 @@ export default function BoxDetail() {
               </p>
             )}
             {unboxStep === 1 && (
-              <p className="text-sm text-muted-foreground">✂️ 테이프 제거 중...</p>
+              <p className="text-sm text-muted-foreground">{t('unbox.removing.tape')}</p>
             )}
             {unboxStep === 2 && (
               <Button size="lg" onClick={handleOpenBox} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce animate-pop-in">
@@ -180,13 +199,13 @@ export default function BoxDetail() {
               </Button>
             )}
             {unboxStep === 3 && (
-              <p className="text-muted-foreground animate-pulse">🎉 개봉 중...</p>
+              <p className="text-muted-foreground animate-pulse">{t('unbox.opening')}</p>
             )}
           </div>
 
           <button onClick={() => navigate('/explore')} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            돌아가기
+            {t('common.back')}
           </button>
         </div>
       </div>
@@ -198,7 +217,7 @@ export default function BoxDetail() {
     <div className="container mx-auto max-w-[1100px] px-4 py-8 animate-slide-up">
       <button onClick={() => navigate('/explore')} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
-        돌아가기
+        {t('common.back')}
       </button>
 
       {/* Header Card */}
@@ -362,10 +381,11 @@ export default function BoxDetail() {
               <Button
                 size="sm"
                 onClick={handlePostMessage}
+                disabled={postingMsg}
                 className="rounded-xl gradient-primary text-primary-foreground shadow-sm btn-bounce gap-1.5"
               >
                 <Send className="h-3.5 w-3.5" />
-                {t('social.post.btn')}
+                {postingMsg ? '...' : t('social.post.btn')}
               </Button>
             </div>
             {socialFilePreview && (
@@ -388,7 +408,7 @@ export default function BoxDetail() {
               <div className="py-16 text-center animate-scale-in">
                 <div className="mb-3 text-5xl">💬</div>
                 <p className="text-muted-foreground">{t('common.empty')}</p>
-                <p className="mt-1 text-xs text-muted-foreground/70">첫 번째 메시지를 남겨보세요!</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">{t('messages.empty.hint')}</p>
               </div>
             ) : messages.map((msg, i) => (
               <div key={msg.id} className="rounded-3xl border border-border bg-card p-5 animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>

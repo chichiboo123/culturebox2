@@ -41,6 +41,9 @@ export default function CreateBox() {
   const [itemFilePreview, setItemFilePreview] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Step 1 validation errors
+  const [step1Errors, setStep1Errors] = useState<{ boxName?: string; toSchool?: string; sameSchool?: string }>({});
+
   // Step 4
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -186,7 +189,13 @@ export default function CreateBox() {
           <div className="space-y-5">
             <div>
               <Label className="text-sm font-semibold">{t('create.boxname')}</Label>
-              <Input value={boxName} onChange={e => setBoxName(e.target.value)} placeholder={t('create.boxname.placeholder')} className="mt-1.5 rounded-2xl" />
+              <Input
+                value={boxName}
+                onChange={e => { setBoxName(e.target.value); setStep1Errors(p => ({ ...p, boxName: '' })); }}
+                placeholder={t('create.boxname.placeholder')}
+                className="mt-1.5 rounded-2xl"
+              />
+              {step1Errors.boxName && <p className="mt-1 text-xs font-medium text-destructive">{step1Errors.boxName}</p>}
             </div>
             <div>
               <Label className="text-sm font-semibold">👥 만든 사람들</Label>
@@ -199,7 +208,7 @@ export default function CreateBox() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-semibold">{t('create.from')}</Label>
-                <Select value={fromSchool} onValueChange={setFromSchool}>
+                <Select value={fromSchool} onValueChange={v => { setFromSchool(v); if (toSchool === v) setToSchool(''); }}>
                   <SelectTrigger className="mt-1.5 rounded-2xl"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {schools.map(s => (
@@ -210,18 +219,32 @@ export default function CreateBox() {
               </div>
               <div>
                 <Label className="text-sm font-semibold">{t('create.to')}</Label>
-                <Select value={toSchool} onValueChange={setToSchool}>
-                  <SelectTrigger className="mt-1.5 rounded-2xl"><SelectValue /></SelectTrigger>
+                <Select value={toSchool} onValueChange={v => { setToSchool(v); setStep1Errors(p => ({ ...p, toSchool: '', sameSchool: '' })); }}>
+                  <SelectTrigger className="mt-1.5 rounded-2xl"><SelectValue placeholder="학교 선택" /></SelectTrigger>
                   <SelectContent>
-                    {schools.map(s => (
+                    {schools.filter(s => s.id !== fromSchool).map(s => (
                       <SelectItem key={s.id} value={s.id}>{getSchoolName(s, lang)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {step1Errors.toSchool && <p className="mt-1 text-xs font-medium text-destructive">{step1Errors.toSchool}</p>}
+                {step1Errors.sameSchool && <p className="mt-1 text-xs font-medium text-destructive">{step1Errors.sameSchool}</p>}
               </div>
             </div>
             <div className="flex justify-end pt-2">
-              <Button onClick={() => setStep(2)} className="rounded-2xl gradient-primary text-primary-foreground shadow-sm btn-bounce gap-1.5">
+              <Button
+                onClick={() => {
+                  const errs: typeof step1Errors = {};
+                  if (!boxName.trim()) errs.boxName = '박스 이름을 입력해주세요.';
+                  const resolvedTo = toSchool || schools.find(s => s.id !== fromSchool)?.id || '';
+                  if (!resolvedTo) errs.toSchool = '받는 학교를 선택해주세요.';
+                  else if (resolvedTo === fromSchool) errs.sameSchool = '보내는 학교와 받는 학교가 달라야 해요.';
+                  if (Object.keys(errs).length > 0) { setStep1Errors(errs); return; }
+                  setStep1Errors({});
+                  setStep(2);
+                }}
+                className="rounded-2xl gradient-primary text-primary-foreground shadow-sm btn-bounce gap-1.5"
+              >
                 {t('create.next')} <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
