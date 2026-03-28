@@ -66,7 +66,7 @@ export default function BoxCard({ box, schools, itemCount = 0, msgCount = 0 }: P
           </span>
         </div>
         <span className="text-xs font-semibold text-primary opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0.5">
-          열어보기 →
+          {t('box.open.hint')}
         </span>
       </div>
     </div>

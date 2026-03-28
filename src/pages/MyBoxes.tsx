@@ -24,7 +24,7 @@ export default function MyBoxes() {
         <div>
           <h1 className="text-2xl font-bold animate-slide-up">💝 {t('nav.myboxes')}</h1>
           <p className="mt-1 text-sm text-muted-foreground animate-slide-up" style={{ animationDelay: '50ms' }}>
-            내가 만든 문화 박스 모아보기
+            {t('myboxes.subtitle')}
           </p>
         </div>
         <Button onClick={() => navigate('/create')} className="rounded-2xl gradient-primary text-primary-foreground shadow-sm btn-bounce gap-1.5">

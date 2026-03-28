@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppProvider } from '@/contexts/AppContext';
+import { AppProvider, useApp } from '@/contexts/AppContext';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import Navbar from '@/components/Navbar';
@@ -22,7 +22,9 @@ function AppContent() {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const location = useLocation();
+  const { user, isAdmin } = useApp();
 
   useEffect(() => {
     const trimmedPath = location.pathname.length > 1 ? location.pathname.replace(/\/+$/, '') : location.pathname;
@@ -32,6 +34,23 @@ function AppContent() {
       navigate(`${normalizedPath}${location.search}${location.hash}`, { replace: true });
     }
   }, [location.pathname, location.search, location.hash, navigate]);
+
+  // Protected routes: require login
+  const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
+  useEffect(() => {
+    if (PROTECTED_PATHS.includes(location.pathname) && !user && !isAdmin) {
+      setPendingPath(location.pathname);
+      setLoginOpen(true);
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, user, isAdmin]);
+
+  const handleLoginSuccess = useCallback(() => {
+    if (pendingPath) {
+      navigate(pendingPath);
+      setPendingPath(null);
+    }
+  }, [pendingPath, navigate]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -53,6 +72,7 @@ function AppContent() {
         open={loginOpen}
         onOpenChange={setLoginOpen}
         onAdminClick={() => setAdminLoginOpen(true)}
+        onSuccess={handleLoginSuccess}
       />
       <AdminLoginModal
         open={adminLoginOpen}
