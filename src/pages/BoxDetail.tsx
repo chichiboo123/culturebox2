@@ -11,7 +11,7 @@ import { ArrowLeft, Send, Package, MessageCircle, Paperclip, X } from 'lucide-re
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t, lang, user, schools } = useApp();
+  const { t, lang, user, isAdmin, schools } = useApp();
 
   const [box, setBox] = useState<Box | null>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -45,6 +45,15 @@ export default function BoxDetail() {
     API.getItems(id).then(setItems).catch(console.error);
     API.getMessages(id).then(setMessages).catch(console.error);
   }, [id]);
+
+  useEffect(() => {
+    if (!box || !user || isAdmin) return;
+
+    const canView = user.school_id === box.from_school_id || user.school_id === box.to_school_id;
+    if (!canView) {
+      navigate('/explore', { replace: true });
+    }
+  }, [box, user, isAdmin, navigate]);
 
   if (!box) return (
     <div className="flex min-h-[60vh] items-center justify-center">
