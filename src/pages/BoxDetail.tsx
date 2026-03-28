@@ -31,6 +31,7 @@ export default function BoxDetail() {
   const [socialMedia, setSocialMedia] = useState('');
   const [socialFile, setSocialFile] = useState<File | null>(null);
   const [socialFilePreview, setSocialFilePreview] = useState<string>('');
+  const [postingMsg, setPostingMsg] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -74,8 +75,6 @@ export default function BoxDetail() {
       setShowContent(true);
     }, 1200);
   };
-
-  const [postingMsg, setPostingMsg] = useState(false);
 
   const handlePostMessage = async () => {
     if (!socialText.trim() || !socialName.trim()) return;
