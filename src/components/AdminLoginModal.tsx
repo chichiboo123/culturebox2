@@ -75,7 +75,7 @@ export default function AdminLoginModal({ open, onOpenChange, onSuccess }: Props
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
           />
           {!HAS_ADMIN_CREDENTIALS && (
-            <p className="text-xs font-medium text-destructive">VITE_ADMIN_USERNAME / VITE_ADMIN_PASSWORD 환경변수가 설정되지 않았습니다.</p>
+            <p className="text-xs font-medium text-destructive">VITE_ADMIN_USERNAME / VITE_ADMIN_PASSWORD 환경변수가 설정되지 않았습니다. 배포 환경변수 설정 후 다시 배포해 주세요.</p>
           )}
           {error && HAS_ADMIN_CREDENTIALS && <p className="text-xs font-medium text-destructive">아이디 또는 비밀번호가 올바르지 않습니다.</p>}
         </div>
