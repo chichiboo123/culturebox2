@@ -1,73 +1,87 @@
-# Welcome to your Lovable project
+# Culture Box 2
 
-## Project info
+학교 간 문화 교류를 위한 디지털 박스 플랫폼입니다.  
+학생/교사가 문화 콘텐츠(텍스트, 이미지, 영상, 링크, PDF)를 박스에 담아 다른 학교로 보내고, 도착한 박스를 열어 메시지로 소통할 수 있습니다.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 주요 기능
 
-## How can I edit this code?
+- **로그인/권한**
+  - 학생/교사 로그인
+  - 관리자 로그인 및 관리 패널
+- **박스 흐름**
+  - 박스 생성(4-step 위저드) → 포장 → 발송 → 개봉
+- **콘텐츠 타입 지원**
+  - text / image / video / youtube / link / pdf
+- **소셜 메시지**
+  - 박스별 댓글/미디어 첨부
+- **다국어/테마**
+  - 한국어/영어/일본어
+  - 기본/블루/그린/핑크 테마
 
-There are several ways of editing your application.
+## 기술 스택
 
-**Use Lovable**
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn-ui(Radix)
+- **Routing**: react-router-dom
+- **Data Layer**: Google Apps Script Web App (action 기반 API)
+- **State**: AppContext + React state
+- **Testing**: Vitest
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 프로젝트 구조
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```text
+src/
+  components/           # 앱 전용 UI (Navbar, LoginModal, BoxCard 등)
+  components/ui/        # shadcn-ui 기반 공통 컴포넌트
+  contexts/
+    AppContext.tsx      # 전역 상태(언어/테마/사용자/학교)
+  lib/
+    api.ts              # 도메인 타입 + GAS API 호출 + 업로드 유틸
+    i18n.ts             # 다국어 사전
+  pages/
+    Home.tsx
+    Explore.tsx
+    CreateBox.tsx
+    BoxDetail.tsx
+    MyBoxes.tsx
+    Admin.tsx
+  App.tsx               # Provider + Router + App Shell
+  main.tsx              # 엔트리 포인트
+public/
+  favicon.svg
 ```
 
-**Edit a file directly in GitHub**
+## 실행 방법
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# 1) 의존성 설치
+npm install
 
-**Use GitHub Codespaces**
+# 2) 개발 서버 실행
+npm run dev
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# 3) 테스트
+npm run test
 
-## What technologies are used for this project?
+# 4) 빌드
+npm run build
+```
 
-This project is built with:
+## 환경/배포 참고
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Vite `base` 설정:
+  - 개발: `/`
+  - 프로덕션: `/culturebox2/`
+- `BrowserRouter`는 `import.meta.env.BASE_URL`를 basename으로 사용합니다.
 
-## How can I deploy this project?
+## 아키텍처 상세 문서
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+자세한 구조 분석은 아래 문서를 참고하세요.
 
-## Can I connect a custom domain to my Lovable project?
+- `docs/APP_ARCHITECTURE_ANALYSIS.md`
 
-Yes, you can!
+## 앱 미리보기 이미지
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- 현재 작업 환경에서는 브라우저 캡처 도구를 사용할 수 없어 첫 페이지 스크린샷을 첨부하지 못했습니다.
+- 캡처 가능한 환경에서 `Home` 화면을 촬영해 본 섹션에 추가해 주세요.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
