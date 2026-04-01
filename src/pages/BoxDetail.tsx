@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ItemDetailModal from '@/components/ItemDetailModal';
 import { ArrowLeft, Send, Package, MessageCircle, Paperclip, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function BoxDetail() {
   const { id } = useParams<{ id: string }>();
@@ -98,7 +99,7 @@ export default function BoxDetail() {
         mediaUrl = socialFilePreview;
       }
 
-      const msg = await API.addMessage({
+      await API.addMessage({
         box_id: box.id,
         user_id: user?.id,
         user_name: socialName.trim(),
@@ -106,7 +107,8 @@ export default function BoxDetail() {
         content: socialText.trim(),
         media_url: mediaUrl,
       });
-      setMessages(prev => [...prev, msg]);
+      // Message is pending admin approval — do not add to local list
+      toast.success('메시지가 전송되었어요! 관리자 검토 후 게시됩니다.');
       setSocialText('');
       setSocialMedia('');
       setSocialFile(null);

@@ -49,6 +49,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     API.getSchools().then(setSchools).catch(console.error);
   }, []);
 
+  // Validate stored admin token on startup; clear if expired server-side
+  useEffect(() => {
+    const token = localStorage.getItem('dcb_admin_token');
+    if (!token) return;
+    API.validateAdminSession(token).then(res => {
+      if (!res?.ok) {
+        setAdminTokenState(null);
+        setIsAdminState(false);
+        localStorage.removeItem('dcb_admin_token');
+        localStorage.removeItem('dcb_admin_session');
+      }
+    }).catch(() => {
+      // Network error: keep session state as-is to avoid false logouts
+    });
+  }, []);
+
   useEffect(() => {
     document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim();
     if (theme !== 'default') document.body.classList.add('theme-' + theme);
