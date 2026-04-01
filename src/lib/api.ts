@@ -116,6 +116,27 @@ async function fetchGAS(action: string, params: Record<string, any> = {}, includ
   }
 }
 
+async function fetchGAS_POST(action: string, params: Record<string, any> = {}, includeAuth = true) {
+  const url = new URL(GAS_URL);
+  const mergedParams = includeAuth
+    ? { action, ...getAuthContext(), ...params }
+    : { action, ...params };
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(mergedParams),
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    return data.result;
+  } catch (err) {
+    console.error(`API POST error (${action}):`, err);
+    throw err;
+  }
+}
+
 async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?: (percent: number) => void): Promise<string> {
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
   if (!match) {
@@ -125,10 +146,12 @@ async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?:
   const mimeType = match[1];
   const base64Data = match[2];
 
-  const CHUNK_SIZE = 1500;
+  // Use large chunks via POST to avoid GET URL length limits (~2000 char param cap).
+  // 50000 chars ≈ 37.5 KB of binary data per request → ~14 requests for a 500 KB image.
+  const CHUNK_SIZE = 50000;
   const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
 
-  const initResult = await fetchGAS('uploadFileInit', {
+  const initResult = await fetchGAS_POST('uploadFileInit', {
     fileName,
     mimeType,
     totalChunks: totalChunks.toString(),
@@ -141,7 +164,7 @@ async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?:
 
   for (let i = 0; i < totalChunks; i++) {
     const chunk = base64Data.substring(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
-    await fetchGAS('uploadFileChunk', {
+    await fetchGAS_POST('uploadFileChunk', {
       uploadId,
       chunkIndex: i.toString(),
       data: chunk,
@@ -151,7 +174,7 @@ async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?:
     onProgress?.(percent);
   }
 
-  const finalResult = await fetchGAS('uploadFileFinalize', { uploadId });
+  const finalResult = await fetchGAS_POST('uploadFileFinalize', { uploadId });
   onProgress?.(100);
   return finalResult?.fileUrl || '';
 }

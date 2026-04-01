@@ -60,7 +60,11 @@ function updateRow(sheetName, id, updates) {
         const col = headers.indexOf(key);
         if (col >= 0) sheet.getRange(i + 1, col + 1).setValue(updates[key]);
       });
-      return { id: id, ...updates };
+      // Build and return the full row object (not just the updated fields)
+      const fullRow = {};
+      headers.forEach((h, hi) => { fullRow[h] = data[i][hi]; });
+      Object.keys(updates).forEach(k => { fullRow[k] = updates[k]; });
+      return fullRow;
     }
   }
   return null;
@@ -443,7 +447,7 @@ function handleRequest(rawParams) {
         type: normalize(params.type || 'text'),
         media_url: normalize(params.media_url),
         parent_id: normalize(params.parent_id),
-        status: 'approved',
+        status: 'pending',
         created_at: new Date().toISOString(),
       };
       appendRow('Messages', msg);
