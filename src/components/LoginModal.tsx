@@ -25,7 +25,10 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
   const handleLogin = () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = t('login.name.error');
-    
+
+    const selectedSchool = schoolId || schools[0]?.id;
+    if (!selectedSchool) newErrors.school = t('login.school.error');
+
     const upperCode = code.trim().toUpperCase();
     const validCodes = role === 'student' ? ACCESS_CODES.student : ACCESS_CODES.teacher;
     if (!validCodes.includes(upperCode)) newErrors.code = t('login.code.error');
@@ -35,7 +38,6 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
       return;
     }
 
-    const selectedSchool = schoolId || schools[0]?.id;
     setUser({
       id: generateId('usr'),
       name: name.trim(),
@@ -102,7 +104,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
         {/* School */}
         <div className="space-y-1.5">
           <Label className="text-sm font-semibold">{t('login.school')}</Label>
-          <Select value={schoolId || schools[0]?.id} onValueChange={setSchoolId}>
+          <Select value={schoolId || schools[0]?.id} onValueChange={v => { setSchoolId(v); setErrors(p => ({ ...p, school: '' })); }}>
             <SelectTrigger className="rounded-2xl">
               <SelectValue />
             </SelectTrigger>
@@ -114,6 +116,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
               ))}
             </SelectContent>
           </Select>
+          {errors.school && <p className="text-xs font-medium text-destructive">{errors.school}</p>}
         </div>
 
         {/* Code */}

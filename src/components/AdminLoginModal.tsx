@@ -41,7 +41,7 @@ export default function AdminLoginModal({ open, onOpenChange, onSuccess }: Props
       setPassword('');
       onSuccess();
     } catch {
-      setError('관리자 인증에 실패했습니다. code.gs Script Properties를 확인하세요.');
+      setError('관리자 인증에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
       setPassword('');
     } finally {
       setLoading(false);
