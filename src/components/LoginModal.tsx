@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
-import { ACCESS_CODES, generateId, getSchoolName } from '@/lib/api';
+import { API, ACCESS_CODES, generateId, getSchoolName } from '@/lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +21,9 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
   const [schoolId, setSchoolId] = useState('');
   const [code, setCode] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = t('login.name.error');
 
@@ -30,18 +31,44 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
     if (!selectedSchool) newErrors.school = t('login.school.error');
 
     const upperCode = code.trim().toUpperCase();
-    const validCodes = role === 'student' ? ACCESS_CODES.student : ACCESS_CODES.teacher;
-    if (!validCodes.includes(upperCode)) newErrors.code = t('login.code.error');
+    if (!upperCode) newErrors.code = t('login.code.error');
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
+    setLoading(true);
+    setErrors({});
+
+    // 1) DB에 등록된 사용자 코드로 먼저 검증 (관리자가 생성한 사용자)
+    try {
+      const result = await API.userLogin(role, upperCode, selectedSchool!);
+      if (result?.ok && result?.user) {
+        setUser({ ...result.user, lang_pref: lang });
+        onOpenChange(false);
+        setName('');
+        setCode('');
+        setLoading(false);
+        onSuccess?.();
+        return;
+      }
+    } catch {
+      // DB에 없으면 하드코딩 코드로 폴백
+    }
+
+    // 2) 하드코딩 공용 코드 폴백
+    const validCodes = role === 'student' ? ACCESS_CODES.student : ACCESS_CODES.teacher;
+    if (!validCodes.includes(upperCode)) {
+      setErrors({ code: t('login.code.error') });
+      setLoading(false);
+      return;
+    }
+
     setUser({
       id: generateId('usr'),
       name: name.trim(),
-      school_id: selectedSchool,
+      school_id: selectedSchool!,
       role,
       lang_pref: lang,
     });
@@ -49,7 +76,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
     onOpenChange(false);
     setName('');
     setCode('');
-    setErrors({});
+    setLoading(false);
     onSuccess?.();
   };
 
@@ -135,8 +162,8 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
           {errors.code && <p className="text-xs font-medium text-destructive">{errors.code}</p>}
         </div>
 
-        <Button onClick={handleLogin} size="lg" className="w-full rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce">
-          {t('login.btn')}
+        <Button onClick={handleLogin} disabled={loading} size="lg" className="w-full rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce">
+          {loading ? '...' : t('login.btn')}
         </Button>
 
         <button
