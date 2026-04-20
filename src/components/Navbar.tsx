@@ -53,9 +53,9 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
     <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 glass">
       <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
         {/* Logo */}
-        <button onClick={() => handleNav('/')} className="flex items-center gap-2.5 btn-bounce">
+        <button onClick={() => handleNav('/')} className="flex shrink-0 items-center gap-2.5 btn-bounce">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-lg shadow-sm">📦</span>
-          <span className="text-lg font-bold tracking-tight text-foreground">Culture Box</span>
+          <span className="whitespace-nowrap text-lg font-bold tracking-tight text-foreground">Culture Box</span>
         </button>
 
         {/* Desktop Nav */}
@@ -135,13 +135,13 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
 
           {/* User chip */}
           {user && !isAdmin && (
-            <div className="hidden items-center gap-2 rounded-2xl bg-muted/70 px-3 py-1.5 md:flex">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
+            <div className="hidden items-center gap-2 rounded-2xl bg-muted/70 px-3 py-1.5 md:flex max-w-[180px]">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-bold text-primary">
                 {user.name.charAt(0)}
               </div>
-              <div className="text-xs leading-tight">
-                <div className="font-semibold">{user.name}</div>
-                <div className="text-muted-foreground">{getSchoolName(school, lang)}</div>
+              <div className="min-w-0 text-xs leading-tight">
+                <div className="truncate font-semibold">{user.name}</div>
+                <div className="truncate text-muted-foreground">{getSchoolName(school, lang)}</div>
               </div>
             </div>
           )}
