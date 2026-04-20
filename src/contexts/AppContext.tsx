@@ -38,7 +38,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('dcb_admin_token');
   });
   const [isAdmin, setIsAdminState] = useState(() => {
-    return localStorage.getItem('dcb_admin_session') === 'active' || !!localStorage.getItem('dcb_admin_token');
+    // Only trust presence of the actual token, not the session marker alone.
+    // The marker can be stale if the token was cleared without removing the marker.
+    return !!localStorage.getItem('dcb_admin_token');
   });
   const [schools, setSchools] = useState<School[]>([]);
   const [theme, setThemeState] = useState(() => {
@@ -52,7 +54,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   // Validate stored admin token on startup; clear if expired server-side
   useEffect(() => {
     const token = localStorage.getItem('dcb_admin_token');
-    if (!token) return;
+    if (!token) {
+      // Clean up any stale session marker that might have been left behind
+      if (localStorage.getItem('dcb_admin_session') === 'active') {
+        setIsAdminState(false);
+        localStorage.removeItem('dcb_admin_session');
+      }
+      return;
+    }
     API.validateAdminSession(token).then(res => {
       if (!res?.ok) {
         setAdminTokenState(null);
@@ -90,6 +99,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('dcb_admin_session', 'active');
     } else {
       localStorage.removeItem('dcb_admin_token');
+      localStorage.removeItem('dcb_admin_session');
+      setIsAdminState(false);
     }
   }, []);
 
