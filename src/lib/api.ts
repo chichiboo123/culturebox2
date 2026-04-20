@@ -182,6 +182,8 @@ async function uploadFileToDrive(dataUrl: string, fileName: string, onProgress?:
 export const API = {
   adminLogin: (username: string, password: string): Promise<{ ok: boolean; admin_token: string; expires_in_sec: number }> =>
     fetchGAS('adminLogin', { username, password }, false),
+  userLogin: (role: string, code: string, school_id: string): Promise<{ ok: boolean; user: User }> =>
+    fetchGAS('userLogin', { role, code, school_id }, false),
   adminLogout: (adminToken: string): Promise<{ ok: boolean }> =>
     fetchGAS('adminLogout', { admin_token: adminToken }, false),
   validateAdminSession: (adminToken: string): Promise<{ ok: boolean }> =>

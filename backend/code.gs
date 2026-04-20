@@ -188,6 +188,34 @@ function handleRequest(rawParams) {
       return jsonResponse({ ok: isAdminTokenValid(normalize(params.admin_token)) });
     }
 
+    case 'userLogin': {
+      const role = normalize(params.role);
+      const code = normalize(params.code).trim().toUpperCase();
+      const school_id = normalize(params.school_id);
+
+      if (!role || !code || !school_id) throw new Error('Missing login parameters');
+
+      const users = sheetToArray('Users');
+      const match = users.find(function(u) {
+        return normalize(u.role) === role &&
+               normalize(u.email).trim().toUpperCase() === code &&
+               normalize(u.school_id) === school_id;
+      });
+
+      if (!match) throw new Error('Invalid credentials');
+
+      return jsonResponse({
+        ok: true,
+        user: {
+          id: normalize(match.id),
+          name: normalize(match.name),
+          school_id: normalize(match.school_id),
+          role: normalize(match.role),
+          lang_pref: normalize(match.lang_pref) || 'ko',
+        },
+      });
+    }
+
     // ===== READ =====
     case 'getSchools':
       return jsonResponse(sheetToArray('Schools'));
