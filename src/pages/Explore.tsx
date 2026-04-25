@@ -12,6 +12,7 @@ export default function Explore() {
   const [boxes, setBoxes] = useState<Box[]>([]);
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [boxCounts, setBoxCounts] = useState<Record<string, { items: number; messages: number }>>({});
 
   useEffect(() => {
     API.getBoxes({ status: filter === 'all' ? undefined : filter, search: search || undefined })
@@ -24,6 +25,19 @@ export default function Explore() {
       })
       .catch(console.error);
   }, [filter, search, user, isAdmin]);
+
+  useEffect(() => {
+    if (boxes.length === 0) {
+      setBoxCounts({});
+      return;
+    }
+    Promise.all(
+      boxes.map(async box => {
+        const [items, messages] = await Promise.all([API.getItems(box.id), API.getMessages(box.id)]);
+        return [box.id, { items: items.length, messages: messages.length }] as const;
+      }),
+    ).then(entries => setBoxCounts(Object.fromEntries(entries))).catch(console.error);
+  }, [boxes]);
 
   const school = user ? schools.find(s => s.id === user.school_id) : undefined;
 
@@ -85,7 +99,12 @@ export default function Explore() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {boxes.map((box, i) => (
             <div key={box.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
-              <BoxCard box={box} schools={schools} />
+              <BoxCard
+                box={box}
+                schools={schools}
+                itemCount={boxCounts[box.id]?.items}
+                msgCount={boxCounts[box.id]?.messages}
+              />
             </div>
           ))}
         </div>

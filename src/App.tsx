@@ -41,19 +41,17 @@ function AppContent() {
     const requiresLogin = PROTECTED_PATHS.includes(location.pathname) || location.pathname.startsWith('/box/');
 
     if (requiresLogin && !user && !isAdmin) {
-      setPendingPath(location.pathname);
+      setPendingPath(`${location.pathname}${location.search}${location.hash}`);
       setLoginOpen(true);
-      navigate('/', { replace: true });
     }
-  }, [location.pathname, user, isAdmin, navigate]);
+  }, [location.pathname, location.search, location.hash, user, isAdmin]);
 
   // Admin route: require admin session only
   useEffect(() => {
     if (location.pathname.startsWith('/admin') && !isAdmin) {
       setAdminLoginOpen(true);
-      navigate('/', { replace: true });
     }
-  }, [location.pathname, isAdmin, navigate]);
+  }, [location.pathname, isAdmin]);
 
   const handleLoginSuccess = useCallback(() => {
     if (pendingPath) {
