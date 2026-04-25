@@ -17,6 +17,7 @@ import Admin from '@/pages/Admin';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
+const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
 
 function AppContent() {
   const navigate = useNavigate();
@@ -36,7 +37,6 @@ function AppContent() {
   }, [location.pathname, location.search, location.hash, navigate]);
 
   // Protected routes: require login (user or admin)
-  const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
   useEffect(() => {
     const requiresLogin = PROTECTED_PATHS.includes(location.pathname) || location.pathname.startsWith('/box/');
 

@@ -117,13 +117,15 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
 
         {/* Name */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold">{t('login.name')}</Label>
+          <Label htmlFor="login-name-input" className="text-sm font-semibold">{t('login.name')}</Label>
           <Input
+            id="login-name-input"
             value={name}
             onChange={e => { setName(e.target.value); setErrors(p => ({ ...p, name: '' })); }}
             onKeyDown={e => e.key === 'Enter' && document.getElementById('login-code-input')?.focus()}
             placeholder={t('login.name')}
             className="rounded-2xl"
+            autoComplete="name"
           />
           {errors.name && <p className="text-xs font-medium text-destructive">{errors.name}</p>}
         </div>
@@ -148,7 +150,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
 
         {/* Code */}
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold">{role === 'student' ? t('login.code') : t('login.teacher.code')}</Label>
+          <Label htmlFor="login-code-input" className="text-sm font-semibold">{role === 'student' ? t('login.code') : t('login.teacher.code')}</Label>
           <Input
             id="login-code-input"
             value={code}
@@ -156,7 +158,7 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
             placeholder={role === 'student' ? t('login.code') : t('login.teacher.code')}
             className="rounded-2xl font-mono tracking-widest"
-            autoComplete="off"
+            autoComplete="one-time-code"
           />
           {role === 'student' && <p className="text-xs text-muted-foreground">{t('login.code.hint')}</p>}
           {errors.code && <p className="text-xs font-medium text-destructive">{errors.code}</p>}

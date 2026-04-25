@@ -32,7 +32,7 @@
     --input: 30 15% 90%;
     --ring: 25 95% 53%;
 
-    --radius: 1rem;
+    --radius: 0.75rem;
 
     /* Culture Box custom */
     --color-primary-glow: 32 100% 65%;
@@ -116,6 +116,11 @@
     font-family: 'Pretendard GOV', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  :where(button, [role='button'], a, input, select, textarea):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 

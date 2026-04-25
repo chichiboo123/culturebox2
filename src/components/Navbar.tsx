@@ -78,7 +78,7 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => setDropdown(dropdown === 'theme' ? null : 'theme')}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="테마"
               aria-label="테마 선택"
             >
@@ -108,7 +108,7 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => setDropdown(dropdown === 'lang' ? null : 'lang')}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="언어 선택"
             >
               <Globe className="h-4 w-4" />
@@ -169,7 +169,7 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           {/* Mobile toggle */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-muted md:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted md:hidden"
             aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

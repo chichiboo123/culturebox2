@@ -66,6 +66,10 @@ export default function BoxDetail() {
   );
 
   const fromSchool = schools.find(s => s.id === box.from_school_id);
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/explore');
+  };
 
   const handleRemoveTape = () => {
     if (unboxStep >= 1) return;
@@ -216,7 +220,7 @@ export default function BoxDetail() {
             )}
           </div>
 
-          <button onClick={() => navigate('/explore')} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <button onClick={handleBack} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             {t('common.back')}
           </button>
@@ -228,7 +232,7 @@ export default function BoxDetail() {
   // ========== Box Content View ==========
   return (
     <div className="container mx-auto max-w-[1100px] px-4 py-8 animate-slide-up">
-      <button onClick={() => navigate('/explore')} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+      <button onClick={handleBack} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         {t('common.back')}
       </button>
@@ -261,8 +265,12 @@ export default function BoxDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex gap-2" role="tablist" aria-label="상세 콘텐츠 탭">
         <button
+          id="box-tab-items"
+          role="tab"
+          aria-selected={tab === 'items'}
+          aria-controls="box-panel-items"
           onClick={() => setTab('items')}
           className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
             tab === 'items'
@@ -274,6 +282,10 @@ export default function BoxDetail() {
           {t('tab.items')} ({items.length})
         </button>
         <button
+          id="box-tab-messages"
+          role="tab"
+          aria-selected={tab === 'messages'}
+          aria-controls="box-panel-messages"
           onClick={() => setTab('messages')}
           className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
             tab === 'messages'
@@ -288,7 +300,7 @@ export default function BoxDetail() {
 
       {/* Items tab */}
       {tab === 'items' && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div id="box-panel-items" role="tabpanel" aria-labelledby="box-tab-items" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 ? (
             <div className="col-span-full py-16 text-center animate-scale-in">
               <div className="mb-3 text-5xl">📭</div>
@@ -358,7 +370,7 @@ export default function BoxDetail() {
 
       {/* Messages tab */}
       {tab === 'messages' && (
-        <div>
+        <div id="box-panel-messages" role="tabpanel" aria-labelledby="box-tab-messages">
           {/* Compose */}
           <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
             <p className="mb-3 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">

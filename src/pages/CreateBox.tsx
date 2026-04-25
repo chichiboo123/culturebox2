@@ -189,9 +189,9 @@ export default function CreateBox() {
       </p>
 
       {/* Stepper */}
-      <div className="mb-10 flex items-center justify-center gap-0">
+      <ol className="mb-10 flex items-center justify-center gap-0" aria-label="박스 생성 단계">
         {steps.map((s, i) => (
-          <div key={s.num} className="flex items-center">
+          <li key={s.num} className="flex items-center" aria-current={step === s.num ? 'step' : undefined}>
             <div className="flex flex-col items-center gap-1.5">
               <div className={`flex h-10 w-10 items-center justify-center rounded-2xl text-lg transition-all duration-300 ${
                 step >= s.num
@@ -207,17 +207,18 @@ export default function CreateBox() {
             {i < 3 && (
               <div className={`mx-2 h-0.5 w-8 rounded-full transition-colors duration-300 ${step > s.num ? 'bg-primary' : 'bg-border'}`} />
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
 
       {/* Step 1: Basic Info */}
       {step === 1 && (
         <div className="rounded-3xl border border-border bg-card p-7 shadow-sm animate-scale-in">
           <div className="space-y-5">
             <div>
-              <Label className="text-sm font-semibold">{t('create.boxname')}</Label>
+              <Label htmlFor="create-box-name" className="text-sm font-semibold">{t('create.boxname')}</Label>
               <Input
+                id="create-box-name"
                 value={boxName}
                 onChange={e => { setBoxName(e.target.value); setStep1Errors(p => ({ ...p, boxName: '' })); }}
                 placeholder={t('create.boxname.placeholder')}
@@ -226,12 +227,12 @@ export default function CreateBox() {
               {step1Errors.boxName && <p className="mt-1 text-xs font-medium text-destructive">{step1Errors.boxName}</p>}
             </div>
             <div>
-              <Label className="text-sm font-semibold">{t('create.people')}</Label>
-              <Input value={creators} onChange={e => setCreators(e.target.value)} placeholder={t('create.people.placeholder')} className="mt-1.5 rounded-2xl" />
+              <Label htmlFor="create-creators" className="text-sm font-semibold">{t('create.people')}</Label>
+              <Input id="create-creators" value={creators} onChange={e => setCreators(e.target.value)} placeholder={t('create.people.placeholder')} className="mt-1.5 rounded-2xl" />
             </div>
             <div>
-              <Label className="text-sm font-semibold">{t('create.desc')}</Label>
-              <Textarea value={boxDesc} onChange={e => setBoxDesc(e.target.value)} placeholder={t('create.desc.placeholder')} className="mt-1.5 rounded-2xl resize-none" rows={3} />
+              <Label htmlFor="create-desc" className="text-sm font-semibold">{t('create.desc')}</Label>
+              <Textarea id="create-desc" value={boxDesc} onChange={e => setBoxDesc(e.target.value)} placeholder={t('create.desc.placeholder')} className="mt-1.5 rounded-2xl resize-none" rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

@@ -54,8 +54,12 @@ export default function Explore() {
       {/* Search + School banner */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-64">
+          <label htmlFor="explore-search" className="sr-only">
+            {t('explore.search')}
+          </label>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            id="explore-search"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={t('explore.search')}
