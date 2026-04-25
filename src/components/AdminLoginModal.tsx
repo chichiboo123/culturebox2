@@ -60,24 +60,25 @@ export default function AdminLoginModal({ open, onOpenChange, onSuccess }: Props
         </DialogHeader>
 
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold">관리자 아이디</Label>
+          <Label htmlFor="admin-id" className="text-sm font-semibold">관리자 아이디</Label>
           <Input
+            id="admin-id"
             value={username}
             onChange={e => setUsername(e.target.value)}
-            autoComplete="off"
+            autoComplete="username"
             className="rounded-2xl"
             onKeyDown={e => e.key === 'Enter' && document.getElementById('admin-pw')?.focus()}
           />
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-sm font-semibold">비밀번호</Label>
+          <Label htmlFor="admin-pw" className="text-sm font-semibold">비밀번호</Label>
           <Input
             id="admin-pw"
             type="password"
             value={password}
             onChange={e => { setPassword(e.target.value); setError(''); }}
-            autoComplete="off"
+            autoComplete="current-password"
             className="rounded-2xl"
             onKeyDown={e => e.key === 'Enter' && handleLogin()}
           />

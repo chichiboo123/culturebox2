@@ -11,6 +11,7 @@ export default function Home({ onLoginClick }: { onLoginClick: () => void }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ schools: 0, boxes: 0, items: 0 });
   const [recentBoxes, setRecentBoxes] = useState<Box[]>([]);
+  const [boxCounts, setBoxCounts] = useState<Record<string, { items: number; messages: number }>>({});
 
   useEffect(() => {
     API.getStats().then(setStats).catch(console.error);
@@ -18,6 +19,16 @@ export default function Home({ onLoginClick }: { onLoginClick: () => void }) {
       setRecentBoxes(boxes.filter(b => b.status !== 'draft').slice(0, 3));
     }).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    if (recentBoxes.length === 0) return;
+    Promise.all(
+      recentBoxes.map(async box => {
+        const [items, messages] = await Promise.all([API.getItems(box.id), API.getMessages(box.id)]);
+        return [box.id, { items: items.length, messages: messages.length }] as const;
+      }),
+    ).then(entries => setBoxCounts(Object.fromEntries(entries))).catch(console.error);
+  }, [recentBoxes]);
 
   const isLoggedIn = !!(user || isAdmin);
 
@@ -164,7 +175,12 @@ export default function Home({ onLoginClick }: { onLoginClick: () => void }) {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {recentBoxes.map((box, i) => (
                 <div key={box.id} className="animate-slide-up" style={{ animationDelay: `${i * 100}ms` }}>
-                  <BoxCard box={box} schools={schools} />
+                  <BoxCard
+                    box={box}
+                    schools={schools}
+                    itemCount={boxCounts[box.id]?.items}
+                    msgCount={boxCounts[box.id]?.messages}
+                  />
                 </div>
               ))}
             </div>

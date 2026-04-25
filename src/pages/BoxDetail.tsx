@@ -60,12 +60,16 @@ export default function BoxDetail() {
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="text-center animate-pulse">
         <div className="mb-3 text-5xl">📦</div>
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t('common.loading')}</p>
       </div>
     </div>
   );
 
   const fromSchool = schools.find(s => s.id === box.from_school_id);
+  const handleBack = () => {
+    if (window.history.length > 1) navigate(-1);
+    else navigate('/explore');
+  };
 
   const handleRemoveTape = () => {
     if (unboxStep >= 1) return;
@@ -115,6 +119,7 @@ export default function BoxDetail() {
       setSocialFilePreview('');
     } catch (e) {
       console.error('Message post failed:', e);
+      toast.error('메시지 전송에 실패했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setPostingMsg(false);
     }
@@ -178,14 +183,16 @@ export default function BoxDetail() {
 
               {/* Tape */}
               {unboxStep <= 1 && (
-                <div
+                <button
+                  type="button"
                   onClick={handleRemoveTape}
+                  aria-label="박스 테이프 제거"
                   className={`absolute inset-x-0 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm bg-amber-200/95 py-2.5 text-[10px] font-extrabold tracking-[0.2em] text-amber-900 shadow-md transition-all hover:bg-amber-300 hover:shadow-lg ${
                     unboxStep === 1 ? 'animate-tape-peel' : ''
                   }`}
                 >
                   ✦ CULTURE BOX ✦
-                </div>
+                </button>
               )}
 
               {/* Heart decoration */}
@@ -213,7 +220,7 @@ export default function BoxDetail() {
             )}
           </div>
 
-          <button onClick={() => navigate('/explore')} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <button onClick={handleBack} className="mt-8 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             {t('common.back')}
           </button>
@@ -225,7 +232,7 @@ export default function BoxDetail() {
   // ========== Box Content View ==========
   return (
     <div className="container mx-auto max-w-[1100px] px-4 py-8 animate-slide-up">
-      <button onClick={() => navigate('/explore')} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+      <button onClick={handleBack} className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         {t('common.back')}
       </button>
@@ -258,8 +265,12 @@ export default function BoxDetail() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex gap-2" role="tablist" aria-label="상세 콘텐츠 탭">
         <button
+          id="box-tab-items"
+          role="tab"
+          aria-selected={tab === 'items'}
+          aria-controls="box-panel-items"
           onClick={() => setTab('items')}
           className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
             tab === 'items'
@@ -271,6 +282,10 @@ export default function BoxDetail() {
           {t('tab.items')} ({items.length})
         </button>
         <button
+          id="box-tab-messages"
+          role="tab"
+          aria-selected={tab === 'messages'}
+          aria-controls="box-panel-messages"
           onClick={() => setTab('messages')}
           className={`flex items-center gap-1.5 rounded-2xl px-5 py-2.5 text-sm font-medium transition-all duration-200 ${
             tab === 'messages'
@@ -285,18 +300,20 @@ export default function BoxDetail() {
 
       {/* Items tab */}
       {tab === 'items' && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div id="box-panel-items" role="tabpanel" aria-labelledby="box-tab-items" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.length === 0 ? (
             <div className="col-span-full py-16 text-center animate-scale-in">
               <div className="mb-3 text-5xl">📭</div>
               <p className="text-muted-foreground">{t('common.empty')}</p>
             </div>
           ) : items.map((item, idx) => (
-            <div
+            <button
+              type="button"
               key={item.id}
               onClick={() => setSelectedItem(item)}
-              className="group cursor-pointer rounded-3xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 animate-item-reveal"
+              className="group w-full text-left cursor-pointer rounded-3xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-primary/20 animate-item-reveal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               style={{ animationDelay: `${idx * 80}ms`, animationFillMode: 'backwards' }}
+              aria-label={`${getItemTitle(item, lang)} 상세 보기`}
             >
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-2xl transition-transform duration-300 group-hover:scale-110">{renderItemIcon(item.type)}</span>
@@ -346,16 +363,19 @@ export default function BoxDetail() {
                   <span className="text-xs font-medium text-muted-foreground">PDF 문서 · 클릭하여 보기</span>
                 </div>
               )}
-            </div>
+            </button>
           ))}
         </div>
       )}
 
       {/* Messages tab */}
       {tab === 'messages' && (
-        <div>
+        <div id="box-panel-messages" role="tabpanel" aria-labelledby="box-tab-messages">
           {/* Compose */}
           <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <p className="mb-3 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              ℹ️ 게시한 메시지는 관리자 검토 후 공개됩니다.
+            </p>
             <div className="mb-3 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 {socialName.charAt(0) || '?'}

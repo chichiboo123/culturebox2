@@ -17,6 +17,7 @@ import Admin from '@/pages/Admin';
 import NotFound from '@/pages/NotFound';
 
 const queryClient = new QueryClient();
+const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
 
 function AppContent() {
   const navigate = useNavigate();
@@ -36,24 +37,21 @@ function AppContent() {
   }, [location.pathname, location.search, location.hash, navigate]);
 
   // Protected routes: require login (user or admin)
-  const PROTECTED_PATHS = ['/explore', '/create', '/myboxes'];
   useEffect(() => {
     const requiresLogin = PROTECTED_PATHS.includes(location.pathname) || location.pathname.startsWith('/box/');
 
     if (requiresLogin && !user && !isAdmin) {
-      setPendingPath(location.pathname);
+      setPendingPath(`${location.pathname}${location.search}${location.hash}`);
       setLoginOpen(true);
-      navigate('/', { replace: true });
     }
-  }, [location.pathname, user, isAdmin, navigate]);
+  }, [location.pathname, location.search, location.hash, user, isAdmin]);
 
   // Admin route: require admin session only
   useEffect(() => {
     if (location.pathname.startsWith('/admin') && !isAdmin) {
       setAdminLoginOpen(true);
-      navigate('/', { replace: true });
     }
-  }, [location.pathname, isAdmin, navigate]);
+  }, [location.pathname, isAdmin]);
 
   const handleLoginSuccess = useCallback(() => {
     if (pendingPath) {

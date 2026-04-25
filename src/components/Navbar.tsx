@@ -38,11 +38,6 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
   ];
 
   const handleNav = (path: string) => {
-    const protectedPaths = ['/explore', '/create', '/myboxes'];
-    if (protectedPaths.includes(path) && !user && !isAdmin) {
-      onLoginClick();
-      return;
-    }
     navigate(path);
     setMobileOpen(false);
   };
@@ -53,7 +48,7 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
     <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 glass">
       <div className="mx-auto flex h-16 max-w-[1100px] items-center justify-between px-4">
         {/* Logo */}
-        <button onClick={() => handleNav('/')} className="flex shrink-0 items-center gap-2.5 btn-bounce">
+        <button onClick={() => handleNav('/')} className="flex shrink-0 items-center gap-2.5 btn-bounce" aria-label="Culture Box 홈으로 이동">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary text-lg shadow-sm">📦</span>
           <span className="whitespace-nowrap text-lg font-bold tracking-tight text-foreground">Culture Box</span>
         </button>
@@ -83,8 +78,9 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => setDropdown(dropdown === 'theme' ? null : 'theme')}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               title="테마"
+              aria-label="테마 선택"
             >
               <Palette className="h-4 w-4" />
             </button>
@@ -112,7 +108,8 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           <div className="relative">
             <button
               onClick={() => setDropdown(dropdown === 'lang' ? null : 'lang')}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="언어 선택"
             >
               <Globe className="h-4 w-4" />
             </button>
@@ -170,7 +167,11 @@ export default function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
           )}
 
           {/* Mobile toggle */}
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-muted md:hidden">
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex h-11 w-11 items-center justify-center rounded-xl hover:bg-muted md:hidden"
+            aria-label={mobileOpen ? '메뉴 닫기' : '메뉴 열기'}
+          >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
