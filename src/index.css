@@ -286,3 +286,11 @@
 .btn-bounce:active {
   @apply translate-y-0 scale-[0.97];
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

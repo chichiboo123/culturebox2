@@ -10,6 +10,7 @@ export default function MyBoxes() {
   const { t, user, schools } = useApp();
   const navigate = useNavigate();
   const [boxes, setBoxes] = useState<Box[]>([]);
+  const [boxCounts, setBoxCounts] = useState<Record<string, { items: number; messages: number }>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -17,6 +18,19 @@ export default function MyBoxes() {
       setBoxes(data.filter(b => b.created_by === user.id));
     }).catch(console.error);
   }, [user]);
+
+  useEffect(() => {
+    if (boxes.length === 0) {
+      setBoxCounts({});
+      return;
+    }
+    Promise.all(
+      boxes.map(async box => {
+        const [items, messages] = await Promise.all([API.getItems(box.id), API.getMessages(box.id)]);
+        return [box.id, { items: items.length, messages: messages.length }] as const;
+      }),
+    ).then(entries => setBoxCounts(Object.fromEntries(entries))).catch(console.error);
+  }, [boxes]);
 
   return (
     <div className="container mx-auto max-w-[1100px] px-4 py-8">
@@ -49,7 +63,12 @@ export default function MyBoxes() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {boxes.map((box, i) => (
             <div key={box.id} className="animate-slide-up" style={{ animationDelay: `${i * 80}ms` }}>
-              <BoxCard box={box} schools={schools} />
+              <BoxCard
+                box={box}
+                schools={schools}
+                itemCount={boxCounts[box.id]?.items}
+                msgCount={boxCounts[box.id]?.messages}
+              />
             </div>
           ))}
         </div>

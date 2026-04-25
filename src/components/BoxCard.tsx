@@ -18,16 +18,20 @@ const statusConfig: Record<string, { bg: string; label: string }> = {
   opened: { bg: 'bg-emerald-100 text-emerald-700', label: 'status.opened' },
 };
 
-export default function BoxCard({ box, schools, itemCount = 0, msgCount = 0 }: Props) {
+export default function BoxCard({ box, schools, itemCount, msgCount }: Props) {
   const { t, lang } = useApp();
   const navigate = useNavigate();
   const fromSchool = schools.find(s => s.id === box.from_school_id);
   const status = statusConfig[box.status] || statusConfig.draft;
 
+  const hasMeta = typeof itemCount === 'number' || typeof msgCount === 'number';
+
   return (
-    <div
+    <button
+      type="button"
       onClick={() => navigate(`/box/${box.id}`)}
-      className="group cursor-pointer overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-primary/20"
+      className="group w-full text-left cursor-pointer overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl hover:border-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      aria-label={`${getBoxTitle(box, lang)} 열기`}
     >
       {/* Cover */}
       <div
@@ -55,20 +59,26 @@ export default function BoxCard({ box, schools, itemCount = 0, msgCount = 0 }: P
 
       {/* Body */}
       <div className="flex items-center justify-between px-5 py-3.5">
-        <div className="flex gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Package className="h-3.5 w-3.5" />
-            {itemCount}
-          </span>
-          <span className="flex items-center gap-1">
-            <MessageCircle className="h-3.5 w-3.5" />
-            {msgCount}
-          </span>
-        </div>
+        {hasMeta ? (
+          <div className="flex gap-4 text-xs text-muted-foreground">
+            {typeof itemCount === 'number' && (
+              <span className="flex items-center gap-1">
+                <Package className="h-3.5 w-3.5" />
+                {itemCount}
+              </span>
+            )}
+            {typeof msgCount === 'number' && (
+              <span className="flex items-center gap-1">
+                <MessageCircle className="h-3.5 w-3.5" />
+                {msgCount}
+              </span>
+            )}
+          </div>
+        ) : <span />}
         <span className="text-xs font-semibold text-primary opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0.5">
           {t('box.open.hint')}
         </span>
       </div>
-    </div>
+    </button>
   );
 }
