@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { API, generateId, getSchoolName, type Item } from '@/lib/api';
@@ -41,6 +41,7 @@ export default function CreateBox() {
   const [itemFilePreview, setItemFilePreview] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [itemFormError, setItemFormError] = useState('');
 
   // Step 1 validation errors
   const [step1Errors, setStep1Errors] = useState<{ boxName?: string; toSchool?: string; sameSchool?: string }>({});
@@ -50,6 +51,13 @@ export default function CreateBox() {
   const [progress, setProgress] = useState(0);
   const [sendError, setSendError] = useState('');
   const [sendSuccess, setSendSuccess] = useState(false);
+
+
+  useEffect(() => {
+    if (!fromSchool && (user?.school_id || schools[0]?.id)) {
+      setFromSchool(user?.school_id || schools[0]?.id || '');
+    }
+  }, [fromSchool, user?.school_id, schools]);
 
   const handleItemFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,7 +72,12 @@ export default function CreateBox() {
   };
 
   const saveItem = () => {
-    if (!itemTitle.trim()) return;
+    if (!itemTitle.trim()) { setItemFormError('아이템 제목을 입력해주세요.'); return; }
+    if (itemType === 'text' && !itemContent.trim()) { setItemFormError('텍스트 아이템은 내용을 입력해주세요.'); return; }
+    if ((itemType === 'image' || itemType === 'pdf' || itemType === 'youtube' || itemType === 'link') && !itemUrl.trim()) {
+      setItemFormError('이 유형은 파일 또는 URL이 필요합니다.');
+      return;
+    }
     const nextItem = {
       type: itemType as any,
       title: itemTitle,
@@ -83,6 +96,7 @@ export default function CreateBox() {
     setItemContent('');
     setItemUrl('');
     setItemFilePreview('');
+    setItemFormError('');
   };
 
   const removeItem = (idx: number) => {
@@ -110,7 +124,19 @@ export default function CreateBox() {
   };
 
   const handleSend = async () => {
-    if (!boxName.trim()) return;
+    if (!boxName.trim()) {
+      setSendError('박스 이름이 비어 있어 발송할 수 없습니다. 1단계에서 이름을 입력해주세요.');
+      return;
+    }
+    if (!fromSchool) {
+      setSendError('보내는 학교 정보가 없어 발송할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+    const resolvedTo = toSchool || schools.find(s => s.id !== fromSchool)?.id || '';
+    if (!resolvedTo || resolvedTo === fromSchool) {
+      setSendError('받는 학교를 올바르게 선택해주세요.');
+      return;
+    }
     setSending(true);
     setSendSuccess(false);
     setSendError('');
@@ -123,7 +149,7 @@ export default function CreateBox() {
         title: boxName,
         description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
         from_school_id: fromSchool,
-        to_school_id: toSchool || schools.find(s => s.id !== fromSchool)?.id || fromSchool,
+        to_school_id: resolvedTo,
         created_by: user?.id || 'unknown',
       });
       console.log('Box created:', box.id);
@@ -290,7 +316,7 @@ export default function CreateBox() {
               {itemTypes.map(it => (
                 <button
                   key={it.type}
-                  onClick={() => { setItemType(it.type); setShowItemForm(true); setItemFilePreview(''); setItemUrl(''); setEditingIndex(null); setItemTitle(''); setItemContent(''); }}
+                  onClick={() => { setItemType(it.type); setShowItemForm(true); setItemFilePreview(''); setItemUrl(''); setEditingIndex(null); setItemTitle(''); setItemContent(''); setItemFormError(''); }}
                   className="flex items-center gap-1 rounded-xl bg-muted/60 px-3 py-1.5 text-xs font-medium transition-all hover:bg-muted hover:shadow-sm btn-bounce"
                 >
                   {it.icon} {it.label}
@@ -324,7 +350,11 @@ export default function CreateBox() {
                     </div>
                     {itemFilePreview && (
                       <div className="relative inline-block">
-                        <img src={itemFilePreview} alt="preview" className="max-h-32 rounded-xl object-cover" />
+                        {itemFilePreview.startsWith('data:video') ? (
+                          <video src={itemFilePreview} className="max-h-32 rounded-xl" controls />
+                        ) : (
+                          <img src={itemFilePreview} alt="preview" className="max-h-32 rounded-xl object-cover" />
+                        )}
                         <button onClick={() => { setItemFilePreview(''); setItemUrl(''); }} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm">
                           <X className="h-3 w-3" />
                         </button>
@@ -365,13 +395,14 @@ export default function CreateBox() {
                 )}
 
                 <div className="flex justify-end gap-2 pt-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setShowItemForm(false); setItemFilePreview(''); setEditingIndex(null); }} className="rounded-xl">
+                  <Button variant="ghost" size="sm" onClick={() => { setShowItemForm(false); setItemFilePreview(''); setEditingIndex(null); setItemFormError(''); }} className="rounded-xl">
                     <X className="mr-1 h-3.5 w-3.5" /> {t('common.cancel')}
                   </Button>
                   <Button size="sm" onClick={saveItem} className="rounded-xl gradient-primary text-primary-foreground shadow-sm">
                     <Check className="mr-1 h-3.5 w-3.5" /> {editingIndex !== null ? '수정 저장' : '저장'}
                   </Button>
                 </div>
+                {itemFormError && <p className="text-xs font-medium text-destructive">{itemFormError}</p>}
               </div>
             </div>
           )}
@@ -517,7 +548,7 @@ export default function CreateBox() {
                   <Button variant="outline" onClick={() => setStep(3)} className="rounded-2xl gap-1.5 btn-bounce">
                     <ArrowLeft className="h-4 w-4" /> {t('create.prev')}
                   </Button>
-                  <Button size="lg" onClick={handleSend} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce gap-2">
+                  <Button size="lg" onClick={handleSend} disabled={sending} className="rounded-2xl gradient-primary text-primary-foreground shadow-lg btn-bounce gap-2 disabled:opacity-60">
                     <Send className="h-4 w-4" /> 발송하기
                   </Button>
                 </div>
