@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSchoolName, getItemTitle, getBoxGradient } from '@/lib/api';
+import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSchoolName, getItemTitle, getBoxGradient, generateId } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -110,9 +110,24 @@ export default function BoxDetail() {
         user_school: user?.school_id,
         content: socialText.trim(),
         media_url: mediaUrl,
+        status: 'approved',
       });
-      // Message is pending admin approval — do not add to local list
-      toast.success('메시지가 전송되었어요! 관리자 검토 후 게시됩니다.');
+      const now = new Date().toISOString();
+      setMessages(prev => [
+        ...prev,
+        {
+          id: generateId('msg'),
+          box_id: box.id,
+          user_id: user?.id || '',
+          user_name: socialName.trim(),
+          user_school: user?.school_id || '',
+          content: socialText.trim(),
+          media_url: mediaUrl,
+          status: 'approved',
+          created_at: now,
+        },
+      ]);
+      toast.success('메시지가 전송되었어요!');
       setSocialText('');
       setSocialMedia('');
       setSocialFile(null);
@@ -373,9 +388,6 @@ export default function BoxDetail() {
         <div id="box-panel-messages" role="tabpanel" aria-labelledby="box-tab-messages">
           {/* Compose */}
           <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <p className="mb-3 rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-              ℹ️ 게시한 메시지는 관리자 검토 후 공개됩니다.
-            </p>
             <div className="mb-3 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                 {socialName.charAt(0) || '?'}
@@ -420,7 +432,11 @@ export default function BoxDetail() {
             </div>
             {socialFilePreview && (
               <div className="mt-3 relative inline-block">
-                <img src={socialFilePreview} alt="preview" className="max-h-32 rounded-2xl object-cover" />
+                {socialFilePreview.startsWith('data:video') ? (
+                  <video src={socialFilePreview} className="max-h-32 rounded-2xl" controls />
+                ) : (
+                  <img src={socialFilePreview} alt="preview" className="max-h-32 rounded-2xl object-cover" />
+                )}
                 <button
                   onClick={handleRemoveFile}
                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm"
@@ -455,7 +471,11 @@ export default function BoxDetail() {
                 </div>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
                 {msg.media_url && (
-                  <img src={msg.media_url} alt="" className="mt-3 max-h-60 rounded-2xl object-cover" />
+                  msg.media_url.match(/\.(mp4|webm|mov)(\?|$)/i) || msg.media_url.startsWith('data:video') ? (
+                    <video src={msg.media_url} controls className="mt-3 max-h-60 rounded-2xl" />
+                  ) : (
+                    <img src={msg.media_url} alt="" className="mt-3 max-h-60 rounded-2xl object-cover" />
+                  )
                 )}
               </div>
             ))}
