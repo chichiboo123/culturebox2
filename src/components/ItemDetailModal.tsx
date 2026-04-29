@@ -31,6 +31,9 @@ function renderItemIcon(type: string) {
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
+  const trimmed = url.trim();
+  const urlInsideText = trimmed.match(/https?:\/\/[^\s]+/);
+  const candidate = urlInsideText?.[0] || trimmed;
   // Handle various YouTube URL formats
   const patterns = [
     /(?:youtube\.com\/watch\?v=)([\w-]+)/,
@@ -40,11 +43,11 @@ function extractYouTubeId(url: string): string | null {
     /(?:youtube\.com\/v\/)([\w-]+)/,
   ];
   for (const pattern of patterns) {
-    const match = url.match(pattern);
+    const match = candidate.match(pattern);
     if (match?.[1]) return match[1];
   }
   // If it looks like a bare ID (11 chars, alphanumeric + dash/underscore)
-  if (/^[\w-]{11}$/.test(url.trim())) return url.trim();
+  if (/^[\w-]{11}$/.test(candidate)) return candidate;
   return null;
 }
 
@@ -62,6 +65,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   if (!item) return null;
 
   const title = getItemTitle(item, viewLang);
+  const mediaSource = item.file_url || item.content || '';
 
   // For YouTube, try content first, then file_url
   const youtubeSource = item.content || item.file_url || '';
@@ -117,17 +121,17 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
             </div>
           )}
 
-          {item.type === 'image' && item.file_url && (
+          {item.type === 'image' && mediaSource && (
             <img
-              src={item.file_url}
+              src={mediaSource}
               alt={title}
               className="w-full rounded-2xl object-contain max-h-[60vh]"
             />
           )}
 
-          {item.type === 'video' && item.file_url && (
+          {item.type === 'video' && mediaSource && (
             <video
-              src={item.file_url}
+              src={mediaSource}
               controls
               className="w-full rounded-2xl max-h-[60vh]"
             />
@@ -154,28 +158,28 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
 
           {item.type === 'link' && (
             <a
-              href={item.content}
+              href={mediaSource}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 rounded-2xl bg-primary/5 border border-primary/15 p-4 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.content}</span>
+              <span className="truncate">{mediaSource}</span>
             </a>
           )}
 
-          {item.type === 'pdf' && item.file_url && (
+          {item.type === 'pdf' && mediaSource && (
             <div className="space-y-3">
               <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-border shadow-sm">
                 <iframe
-                  src={getGoogleDrivePreviewUrl(item.file_url) || ''}
+                  src={getGoogleDrivePreviewUrl(mediaSource) || ''}
                   className="h-full w-full"
                   title={title}
                   allow="autoplay"
                 />
               </div>
               <a
-                href={item.file_url}
+                href={mediaSource}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-xl bg-muted px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
