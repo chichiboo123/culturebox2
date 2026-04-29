@@ -43,8 +43,10 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
     return false;
   }, [item, viewLang]);
 
-  const title = dynamicTitle || (item ? getItemTitle(item, viewLang) : '');
-  const localizedContent = dynamicContent || (item ? getItemContent(item, viewLang) : '');
+  const baseTitle = item ? getItemTitle(item, viewLang) : '';
+  const baseContent = item ? getItemContent(item, viewLang) : '';
+  const title = needsRuntimeTranslation ? (dynamicTitle || baseTitle) : baseTitle;
+  const localizedContent = needsRuntimeTranslation ? (dynamicContent || baseContent) : baseContent;
   const mediaSource = item ? (item.file_url || localizedContent || item.content || '') : '';
 
   // For YouTube, try content first, then file_url
@@ -54,7 +56,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   useEffect(() => {
     setDynamicTitle('');
     setDynamicContent('');
-  }, [item?.id]);
+  }, [item?.id, viewLang]);
 
   useEffect(() => {
     let cancelled = false;
