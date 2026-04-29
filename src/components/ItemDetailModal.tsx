@@ -35,9 +35,14 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   const [dynamicTitle, setDynamicTitle] = useState<string>('');
   const [dynamicContent, setDynamicContent] = useState<string>('');
 
+  // Determine if runtime translation is needed:
+  // - No translation needed if viewLang matches the item's original language
+  // - Always check per-language stored fields first (title_ko/en/ja, content_ko/en/ja)
   const needsRuntimeTranslation = useMemo(() => {
     if (!item) return false;
-    if (viewLang === 'ko') return false;
+    const origLang = item.orig_lang || 'ko';
+    if (viewLang === origLang) return false;
+    if (viewLang === 'ko') return !item.title_ko || !item.content_ko;
     if (viewLang === 'en') return !item.title_en || !item.content_en;
     if (viewLang === 'ja') return !item.title_ja || !item.content_ja;
     return false;
@@ -61,17 +66,22 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   useEffect(() => {
     let cancelled = false;
     if (!open || !item || !needsRuntimeTranslation) return;
-    const target = viewLang === 'ko' ? 'ko' : viewLang;
+
+    const origLang = item.orig_lang || 'ko';
 
     (async () => {
       try {
         const [translatedTitle, translatedContent] = await Promise.all([
-          API.translate(item.title || '', target),
-          API.translate(item.content || '', target),
+          API.translate(item.title || '', viewLang, origLang),
+          API.translate(item.content || '', viewLang, origLang),
         ]);
         if (!cancelled) {
           setDynamicTitle(translatedTitle || '');
           setDynamicContent(translatedContent || '');
+        }
+        // Cache content translation to sheet (non-blocking, best-effort)
+        if (translatedContent && item.id && !cancelled) {
+          API.cacheTranslation('item', item.id, viewLang, translatedContent).catch(() => null);
         }
       } catch (err) {
         console.warn('Runtime translation failed:', err);
@@ -82,6 +92,8 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   }, [open, item, viewLang, needsRuntimeTranslation]);
 
   if (!item) return null;
+
+  const origLang = item.orig_lang || 'ko';
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setViewLang(defaultLang); } }}>
@@ -100,10 +112,15 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
                   </DialogTitle>
                   <DialogDescription className="text-[11px] uppercase tracking-wider font-bold">
                     {item.type}
+                    {origLang !== viewLang && (
+                      <span className="ml-2 normal-case font-normal text-muted-foreground">
+                        원어: {origLang.toUpperCase()}
+                      </span>
+                    )}
                   </DialogDescription>
                 </div>
               </div>
-              {/* Language selector */}
+              {/* Language selector: orig → ko → en → ja */}
               <div className="flex gap-1">
                 {langOptions.map(lo => (
                   <button
@@ -116,6 +133,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
                     }`}
                   >
                     {lo.label}
+                    {lo.code === origLang && <span className="ml-0.5 opacity-60">*</span>}
                   </button>
                 ))}
               </div>
