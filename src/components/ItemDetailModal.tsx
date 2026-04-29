@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { type Item, getItemTitle } from '@/lib/api';
+import { type Item, getItemTitle, getItemContent } from '@/lib/api';
 import type { Language } from '@/lib/i18n';
 import { ExternalLink } from 'lucide-react';
+import { extractYouTubeId, toGoogleDriveImageUrl, toGoogleDrivePdfEmbedUrl } from '@/lib/media';
 
 interface Props {
   item: Item | null;
@@ -29,46 +30,17 @@ function renderItemIcon(type: string) {
   }
 }
 
-function extractYouTubeId(url: string): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  const urlInsideText = trimmed.match(/https?:\/\/[^\s]+/);
-  const candidate = urlInsideText?.[0] || trimmed;
-  // Handle various YouTube URL formats
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([\w-]+)/,
-    /(?:youtube\.com\/embed\/)([\w-]+)/,
-    /(?:youtu\.be\/)([\w-]+)/,
-    /(?:youtube\.com\/shorts\/)([\w-]+)/,
-    /(?:youtube\.com\/v\/)([\w-]+)/,
-  ];
-  for (const pattern of patterns) {
-    const match = candidate.match(pattern);
-    if (match?.[1]) return match[1];
-  }
-  // If it looks like a bare ID (11 chars, alphanumeric + dash/underscore)
-  if (/^[\w-]{11}$/.test(candidate)) return candidate;
-  return null;
-}
-
-function getGoogleDrivePreviewUrl(fileUrl: string): string | null {
-  const driveMatch = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (driveMatch) {
-    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
-  }
-  return `https://docs.google.com/viewer?url=${encodeURIComponent(fileUrl)}&embedded=true`;
-}
-
 export default function ItemDetailModal({ item, open, onClose, lang: defaultLang }: Props) {
   const [viewLang, setViewLang] = useState<Language>(defaultLang);
 
   if (!item) return null;
 
   const title = getItemTitle(item, viewLang);
-  const mediaSource = item.file_url || item.content || '';
+  const localizedContent = getItemContent(item, viewLang);
+  const mediaSource = item.file_url || localizedContent || item.content || '';
 
   // For YouTube, try content first, then file_url
-  const youtubeSource = item.content || item.file_url || '';
+  const youtubeSource = item.file_url || localizedContent || item.content || '';
   const youtubeId = item.type === 'youtube' ? extractYouTubeId(youtubeSource) : null;
 
   return (
@@ -116,14 +88,14 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
           {item.type === 'text' && (
             <div className="rounded-2xl bg-muted/30 p-5">
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {item.content}
+                {localizedContent}
               </p>
             </div>
           )}
 
           {item.type === 'image' && mediaSource && (
             <img
-              src={mediaSource}
+              src={toGoogleDriveImageUrl(mediaSource)}
               alt={title}
               className="w-full rounded-2xl object-contain max-h-[60vh]"
             />
@@ -141,7 +113,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
             youtubeId ? (
               <div className="aspect-video overflow-hidden rounded-2xl shadow-sm">
                 <iframe
-                  src={`https://www.youtube.com/embed/${youtubeId}`}
+                  src={`https://www.youtube-nocookie.com/embed/${youtubeId}?rel=0&modestbranding=1`}
                   className="h-full w-full"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -172,7 +144,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
             <div className="space-y-3">
               <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-border shadow-sm">
                 <iframe
-                  src={getGoogleDrivePreviewUrl(mediaSource) || ''}
+                  src={toGoogleDrivePdfEmbedUrl(mediaSource)}
                   className="h-full w-full"
                   title={title}
                   allow="autoplay"
