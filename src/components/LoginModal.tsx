@@ -57,7 +57,36 @@ export default function LoginModal({ open, onOpenChange, onAdminClick, onSuccess
       // DB에 없으면 하드코딩 코드로 폴백
     }
 
-    // 2) 하드코딩 공용 코드 폴백
+    // 2) userLogin API가 실패하더라도 사용자 목록에서 한 번 더 코드 검증 (시트 컬럼 불일치/백엔드 회귀 대비)
+    try {
+      const users = await API.getUsers();
+      const matchedUser = users.find((u: any) => {
+        const userRole = String(u?.role || '').trim().toLowerCase();
+        const userSchoolId = String(u?.school_id || '').trim();
+        const rawCode = String(u?.code || u?.access_code || u?.email || '').trim().toUpperCase();
+        return userRole === role && userSchoolId === selectedSchool && rawCode === upperCode;
+      });
+
+      if (matchedUser) {
+        setUser({
+          id: matchedUser.id || generateId('usr'),
+          name: matchedUser.name || name.trim(),
+          school_id: selectedSchool!,
+          role,
+          lang_pref: lang,
+        });
+        onOpenChange(false);
+        setName('');
+        setCode('');
+        setLoading(false);
+        onSuccess?.();
+        return;
+      }
+    } catch {
+      // getUsers 실패 시 공용 코드로 폴백
+    }
+
+    // 3) 하드코딩 공용 코드 폴백
     const validCodes = role === 'student' ? ACCESS_CODES.student : ACCESS_CODES.teacher;
     if (!validCodes.includes(upperCode)) {
       setErrors({ code: t('login.code.error') });
