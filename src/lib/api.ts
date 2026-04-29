@@ -13,10 +13,13 @@ export interface School {
 
 export interface Box {
   id: string;
+  orig_lang?: Language;
   title: string;
+  title_ko?: string;
   title_en?: string;
   title_ja?: string;
   description: string;
+  description_ko?: string;
   description_en?: string;
   description_ja?: string;
   from_school_id: string;
@@ -33,16 +36,22 @@ export interface Item {
   id: string;
   box_id: string;
   type: 'text' | 'image' | 'video' | 'youtube' | 'link' | 'pdf';
+  orig_lang?: Language;
   title: string;
+  title_ko?: string;
   title_en?: string;
   title_ja?: string;
   content: string;
+  content_ko?: string;
   content_en?: string;
   content_ja?: string;
   file_url?: string;
   order: number;
   created_by: string;
   created_at: string;
+  trans_ko?: string;
+  trans_en?: string;
+  trans_ja?: string;
 }
 
 export interface Message {
@@ -52,10 +61,14 @@ export interface Message {
   user_name: string;
   user_school: string;
   content: string;
+  orig_lang?: Language;
   media_url?: string;
   parent_id?: string;
   status: 'approved' | 'pending' | 'hidden';
   created_at: string;
+  trans_ko?: string;
+  trans_en?: string;
+  trans_ja?: string;
 }
 
 export interface Reaction {
@@ -190,8 +203,15 @@ export const API = {
     fetchGAS('adminLogout', { admin_token: adminToken }, false),
   validateAdminSession: (adminToken: string): Promise<{ ok: boolean }> =>
     fetchGAS('validateAdminSession', { admin_token: adminToken }, false),
-  translate: (text: string, to: 'en' | 'ja' | 'ko'): Promise<string> =>
-    fetchGAS('translate', { text, to }, false),
+
+  // Translation: orig_lang → ko → en → ja
+  // from: optional source language code for better accuracy ('' = auto-detect)
+  translate: (text: string, to: 'en' | 'ja' | 'ko', from?: Language): Promise<string> =>
+    fetchGAS('translate', { text, to, ...(from ? { from } : {}) }, false),
+
+  // Cache a translation result to the spreadsheet (fire-and-forget friendly)
+  cacheTranslation: (targetType: 'message' | 'item', targetId: string, lang: 'ko' | 'en' | 'ja', transText: string): Promise<boolean> =>
+    fetchGAS('cacheTranslation', { target_type: targetType, target_id: targetId, lang, trans_text: transText }),
 
   getSchools: (): Promise<School[]> => fetchGAS('getSchools'),
   getBoxes: (filters: { status?: string; search?: string; school_id?: string } = {}): Promise<Box[]> => fetchGAS('getBoxes', filters),
@@ -219,6 +239,10 @@ export const API = {
 };
 
 // Helper functions
+// All helpers follow the translation standard: orig_lang → ko → en → ja
+// - If lang matches orig_lang, return the original title/content directly
+// - Otherwise return the specific language translation if available, falling back to the original
+
 export function getSchoolName(school: School | undefined, lang: Language): string {
   if (!school) return '?';
   if (lang === 'ja') return school.name_ja || school.name_ko;
@@ -227,27 +251,47 @@ export function getSchoolName(school: School | undefined, lang: Language): strin
 }
 
 export function getBoxTitle(box: Box, lang: Language): string {
-  if (lang === 'ja' && box.title_ja) return box.title_ja;
-  if (lang === 'en' && box.title_en) return box.title_en;
-  return box.title || box.title_en || '';
+  const origLang = box.orig_lang || 'ko';
+  if (lang === origLang) return box.title;
+  if (lang === 'ko') return box.title_ko || box.title;
+  if (lang === 'en') return box.title_en || box.title;
+  if (lang === 'ja') return box.title_ja || box.title;
+  return box.title;
 }
 
 export function getBoxDesc(box: Box, lang: Language): string {
-  if (lang === 'ja' && box.description_ja) return box.description_ja;
-  if (lang === 'en' && box.description_en) return box.description_en;
-  return box.description || box.description_en || '';
+  const origLang = box.orig_lang || 'ko';
+  if (lang === origLang) return box.description;
+  if (lang === 'ko') return box.description_ko || box.description;
+  if (lang === 'en') return box.description_en || box.description;
+  if (lang === 'ja') return box.description_ja || box.description;
+  return box.description;
 }
 
 export function getItemTitle(item: Item, lang: Language): string {
-  if (lang === 'ja' && item.title_ja) return item.title_ja;
-  if (lang === 'en' && item.title_en) return item.title_en;
-  return item.title || item.title_en || '';
+  const origLang = item.orig_lang || 'ko';
+  if (lang === origLang) return item.title;
+  if (lang === 'ko') return item.title_ko || item.title;
+  if (lang === 'en') return item.title_en || item.title;
+  if (lang === 'ja') return item.title_ja || item.title;
+  return item.title;
 }
 
 export function getItemContent(item: Item, lang: Language): string {
-  if (lang === 'ja' && item.content_ja) return item.content_ja;
-  if (lang === 'en' && item.content_en) return item.content_en;
-  return item.content || item.content_en || '';
+  const origLang = item.orig_lang || 'ko';
+  if (lang === origLang) return item.content;
+  if (lang === 'ko') return item.content_ko || item.content;
+  if (lang === 'en') return item.content_en || item.content;
+  if (lang === 'ja') return item.content_ja || item.content;
+  return item.content;
+}
+
+// Returns the cached server-side translation for a message, or empty string if not cached
+export function getMessageTranslation(msg: Message, lang: 'ko' | 'en' | 'ja'): string {
+  if (lang === 'ko') return msg.trans_ko || '';
+  if (lang === 'en') return msg.trans_en || '';
+  if (lang === 'ja') return msg.trans_ja || '';
+  return '';
 }
 
 export const ACCESS_CODES = {

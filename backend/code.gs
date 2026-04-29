@@ -11,6 +11,11 @@
  * Security notes:
  * - Admin credentials are verified SERVER-SIDE only.
  * - Admin session token is stored in CacheService with TTL.
+ *
+ * Translation standard: orig_lang → ko → en → ja
+ * - orig_lang: language the content was originally written in
+ * - trans_ko/en/ja: cached auto-translations
+ * - title_ko/en/ja, content_ko/en/ja: per-field translations
  */
 
 // ====== CONFIGURATION ======
@@ -237,6 +242,7 @@ function handleRequest(rawParams) {
         const q = normalize(params.search).toLowerCase();
         boxes = boxes.filter(b =>
           normalize(b.title).toLowerCase().includes(q) ||
+          normalize(b.title_ko).toLowerCase().includes(q) ||
           normalize(b.title_en).toLowerCase().includes(q) ||
           normalize(b.title_ja).toLowerCase().includes(q) ||
           normalize(b.description).toLowerCase().includes(q)
@@ -290,12 +296,30 @@ function handleRequest(rawParams) {
       requireAdmin(params);
       return jsonResponse(sheetToArray('Users'));
 
+    // translate action: supports explicit source language for better accuracy
+    // orig_lang → ko → en → ja translation standard
     case 'translate': {
       const text = normalize(params.text);
       const to = normalize(params.to || 'en');
+      const from = normalize(params.from || ''); // '' = auto-detect
       if (!text) return jsonResponse('');
-      const translated = LanguageApp.translate(text, '', to);
+      const translated = LanguageApp.translate(text, from, to);
       return jsonResponse(translated);
+    }
+
+    // Cache a translation result back to the sheet (Messages or Items)
+    case 'cacheTranslation': {
+      const targetType = normalize(params.target_type); // 'message' | 'item'
+      const targetId = normalize(params.target_id);
+      const lang = normalize(params.lang); // 'ko' | 'en' | 'ja'
+      const transText = normalize(params.trans_text);
+
+      if (!targetId || !lang || !transText) return jsonResponse(false);
+      if (!['ko', 'en', 'ja'].includes(lang)) return jsonResponse(false);
+
+      const sheetName = targetType === 'message' ? 'Messages' : 'Items';
+      const colName = 'trans_' + lang;
+      return jsonResponse(updateRow(sheetName, targetId, { [colName]: transText }) !== null);
     }
 
     // ===== SCHOOLS (admin) =====
@@ -364,10 +388,13 @@ function handleRequest(rawParams) {
       }
       const box = {
         id: generateId('box'),
+        orig_lang: normalize(params.orig_lang || 'ko'),
         title: normalize(params.title),
+        title_ko: normalize(params.title_ko),
         title_en: normalize(params.title_en),
         title_ja: normalize(params.title_ja),
         description: normalize(params.description),
+        description_ko: normalize(params.description_ko),
         description_en: normalize(params.description_en),
         description_ja: normalize(params.description_ja),
         from_school_id: normalize(params.from_school_id),
@@ -392,7 +419,7 @@ function handleRequest(rawParams) {
       }
 
       const updates = {};
-      ['title','title_en','title_ja','description','description_en','description_ja','from_school_id','to_school_id','status','cover_image_url','sent_at','opened_at']
+      ['orig_lang','title','title_ko','title_en','title_ja','description','description_ko','description_en','description_ja','from_school_id','to_school_id','status','cover_image_url','sent_at','opened_at']
         .forEach(f => { if (params[f] !== undefined) updates[f] = params[f]; });
       return jsonResponse(updateRow('Boxes', params.id, updates));
     }
@@ -435,19 +462,22 @@ function handleRequest(rawParams) {
         id: generateId('itm'),
         box_id: normalize(params.box_id),
         type: normalize(params.type || 'text'),
+        orig_lang: normalize(params.orig_lang || 'ko'),
         title: normalize(params.title),
+        title_ko: normalize(params.title_ko),
         title_en: normalize(params.title_en),
         title_ja: normalize(params.title_ja),
         content: normalize(params.content),
+        content_ko: normalize(params.content_ko),
         content_en: normalize(params.content_en),
         content_ja: normalize(params.content_ja),
         file_url: normalize(params.file_url),
         order: Number(params.order || 0),
         created_by: normalize(params.created_by),
         created_at: new Date().toISOString(),
-        trans_ko: '',
-        trans_en: '',
-        trans_ja: '',
+        trans_ko: normalize(params.trans_ko),
+        trans_en: normalize(params.trans_en),
+        trans_ja: normalize(params.trans_ja),
       };
       appendRow('Items', item);
       return jsonResponse(item);
@@ -472,11 +502,15 @@ function handleRequest(rawParams) {
         user_name: normalize(params.user_name),
         user_school: normalize(params.user_school),
         content: normalize(params.content),
+        orig_lang: normalize(params.orig_lang || 'ko'),
         type: normalize(params.type || 'text'),
         media_url: normalize(params.media_url),
         parent_id: normalize(params.parent_id),
         status: normalize(params.status || 'approved') || 'approved',
         created_at: new Date().toISOString(),
+        trans_ko: '',
+        trans_en: '',
+        trans_ja: '',
       };
       appendRow('Messages', msg);
       return jsonResponse(msg);
@@ -579,17 +613,38 @@ function doPost(e) {
   }
 }
 
-// ====== SETUP (run once) ======
+// ====== SETUP (run once on fresh start) ======
 
 function setupSheets() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 
+  // Translation standard: orig_lang → ko → en → ja
+  // - orig_lang: language the content was originally written in (ko/en/ja)
+  // - title/content: stored in orig_lang
+  // - title_ko/en/ja, content_ko/en/ja: per-language translations
+  // - trans_ko/en/ja (Messages, Items): cached auto-translations of the main content field
   const schemas = {
     Schools: ['id', 'name_ko', 'name_en', 'name_ja', 'country', 'logo_url', 'created_at'],
     Users: ['id', 'school_id', 'role', 'name', 'email', 'lang_pref', 'created_at'],
-    Boxes: ['id', 'title', 'title_en', 'title_ja', 'description', 'description_en', 'description_ja', 'from_school_id', 'to_school_id', 'status', 'cover_image_url', 'created_by', 'created_at', 'sent_at', 'opened_at'],
-    Items: ['id', 'box_id', 'type', 'title', 'title_en', 'title_ja', 'content', 'content_en', 'content_ja', 'file_url', 'order', 'created_by', 'created_at', 'trans_ko', 'trans_en', 'trans_ja'],
-    Messages: ['id', 'box_id', 'user_id', 'user_name', 'user_school', 'content', 'type', 'media_url', 'parent_id', 'status', 'created_at'],
+    Boxes: [
+      'id', 'orig_lang',
+      'title', 'title_ko', 'title_en', 'title_ja',
+      'description', 'description_ko', 'description_en', 'description_ja',
+      'from_school_id', 'to_school_id', 'status', 'cover_image_url',
+      'created_by', 'created_at', 'sent_at', 'opened_at',
+    ],
+    Items: [
+      'id', 'box_id', 'type', 'orig_lang',
+      'title', 'title_ko', 'title_en', 'title_ja',
+      'content', 'content_ko', 'content_en', 'content_ja',
+      'file_url', 'order', 'created_by', 'created_at',
+      'trans_ko', 'trans_en', 'trans_ja',
+    ],
+    Messages: [
+      'id', 'box_id', 'user_id', 'user_name', 'user_school',
+      'content', 'orig_lang', 'type', 'media_url', 'parent_id', 'status', 'created_at',
+      'trans_ko', 'trans_en', 'trans_ja',
+    ],
     Reactions: ['id', 'target_type', 'target_id', 'user_id', 'type', 'created_at'],
   };
 
@@ -622,4 +677,50 @@ function setupSheets() {
   }
 
   Logger.log('Setup complete');
+}
+
+// ====== MIGRATION (run once to add new columns to existing data without data loss) ======
+
+function addMissingColumns() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const additions = {
+    Boxes: ['orig_lang', 'title_ko', 'description_ko'],
+    Items: ['orig_lang', 'title_ko', 'content_ko'],
+    Messages: ['orig_lang', 'trans_ko', 'trans_en', 'trans_ja'],
+  };
+
+  Object.keys(additions).forEach(function(sheetName) {
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      Logger.log('Sheet not found: ' + sheetName);
+      return;
+    }
+
+    const lastCol = sheet.getLastColumn();
+    const existingHeaders = lastCol > 0
+      ? sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+      : [];
+
+    const newCols = additions[sheetName].filter(function(col) {
+      return !existingHeaders.includes(col);
+    });
+
+    newCols.forEach(function(col) {
+      const newColIndex = sheet.getLastColumn() + 1;
+      const headerCell = sheet.getRange(1, newColIndex);
+      headerCell.setValue(col);
+      headerCell.setFontWeight('bold');
+      headerCell.setBackground('#4A6CF7');
+      headerCell.setFontColor('#FFFFFF');
+      sheet.autoResizeColumn(newColIndex);
+      Logger.log(sheetName + ': added column "' + col + '" at position ' + newColIndex);
+    });
+
+    if (newCols.length === 0) {
+      Logger.log(sheetName + ': all columns already present');
+    }
+  });
+
+  Logger.log('Migration complete - run addMissingColumns() finished');
 }

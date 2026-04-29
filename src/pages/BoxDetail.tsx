@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
-import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSchoolName, getItemTitle, getBoxGradient, generateId } from '@/lib/api';
+import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSchoolName, getItemTitle, getBoxGradient, generateId, getMessageTranslation } from '@/lib/api';
 import { extractYouTubeId, toGoogleDriveImageUrl } from '@/lib/media';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,6 +112,7 @@ export default function BoxDetail() {
         user_name: socialName.trim(),
         user_school: user?.school_id,
         content: socialText.trim(),
+        orig_lang: user?.lang_pref || lang,
         media_url: mediaUrl,
         status: 'approved',
       });
@@ -162,10 +163,27 @@ export default function BoxDetail() {
 
   const getTranslatedMessage = async (msg: Message, to: 'ko' | 'en' | 'ja') => {
     const key = `${msg.id}_${to}`;
+
+    // 1. Local component-level cache
     if (messageTranslations[key]) return messageTranslations[key];
-    const translated = await API.translate(msg.content || '', to);
-    setMessageTranslations(prev => ({ ...prev, [key]: translated || msg.content || '' }));
-    return translated || msg.content || '';
+
+    // 2. Server-cached translation stored in the Messages sheet
+    const serverCached = getMessageTranslation(msg, to);
+    if (serverCached) {
+      setMessageTranslations(prev => ({ ...prev, [key]: serverCached }));
+      return serverCached;
+    }
+
+    // 3. Fetch via LanguageApp, passing orig_lang for better accuracy
+    const origLang = msg.orig_lang || undefined;
+    const translated = await API.translate(msg.content || '', to, origLang);
+    const result = translated || msg.content || '';
+    setMessageTranslations(prev => ({ ...prev, [key]: result }));
+
+    // Cache result to the spreadsheet (fire-and-forget)
+    API.cacheTranslation('message', msg.id, to, result).catch(() => null);
+
+    return result;
   };
 
   const renderItemIcon = (type: string) => {
@@ -391,7 +409,7 @@ export default function BoxDetail() {
       {tab === 'messages' && (
         <div id="box-panel-messages" role="tabpanel" aria-labelledby="box-tab-messages">
           <div className="mb-4 flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">댓글 번역 보기</div>
+            <div className="text-xs text-muted-foreground">댓글 번역 보기 (원어 → KO → EN → JA)</div>
             <div className="flex gap-1">
               {(['orig','ko','en','ja'] as const).map(code => (
                 <button key={code} onClick={() => setMessageLang(code)} className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${messageLang===code ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
@@ -479,8 +497,11 @@ export default function BoxDetail() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold">{msg.user_name}</div>
-                    <div className="text-[11px] text-muted-foreground">
-                      {new Date(msg.created_at).toLocaleDateString()}
+                    <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span>{new Date(msg.created_at).toLocaleDateString()}</span>
+                      {msg.orig_lang && (
+                        <span className="rounded bg-muted px-1 py-0.5 font-bold uppercase">{msg.orig_lang}</span>
+                      )}
                     </div>
                   </div>
                 </div>
