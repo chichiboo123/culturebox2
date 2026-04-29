@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { type Item, getItemTitle, getItemContent } from '@/lib/api';
+import { API, type Item, getItemTitle, getItemContent } from '@/lib/api';
 import type { Language } from '@/lib/i18n';
 import { ExternalLink } from 'lucide-react';
 import { extractYouTubeId, toGoogleDriveImageUrl, toGoogleDrivePdfEmbedUrl } from '@/lib/media';
@@ -32,16 +32,53 @@ function renderItemIcon(type: string) {
 
 export default function ItemDetailModal({ item, open, onClose, lang: defaultLang }: Props) {
   const [viewLang, setViewLang] = useState<Language>(defaultLang);
+  const [dynamicTitle, setDynamicTitle] = useState<string>('');
+  const [dynamicContent, setDynamicContent] = useState<string>('');
 
   if (!item) return null;
 
-  const title = getItemTitle(item, viewLang);
-  const localizedContent = getItemContent(item, viewLang);
+  const title = dynamicTitle || getItemTitle(item, viewLang);
+  const localizedContent = dynamicContent || getItemContent(item, viewLang);
   const mediaSource = item.file_url || localizedContent || item.content || '';
 
   // For YouTube, try content first, then file_url
   const youtubeSource = item.file_url || localizedContent || item.content || '';
   const youtubeId = item.type === 'youtube' ? extractYouTubeId(youtubeSource) : null;
+
+  const needsRuntimeTranslation = useMemo(() => {
+    if (viewLang === 'ko') return false;
+    if (viewLang === 'en') return !item.title_en || !item.content_en;
+    if (viewLang === 'ja') return !item.title_ja || !item.content_ja;
+    return false;
+  }, [item, viewLang]);
+
+  useEffect(() => {
+    setDynamicTitle('');
+    setDynamicContent('');
+  }, [item?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!open || !item || !needsRuntimeTranslation) return;
+    const target = viewLang === 'ko' ? 'ko' : viewLang;
+
+    (async () => {
+      try {
+        const [translatedTitle, translatedContent] = await Promise.all([
+          API.translate(item.title || '', target),
+          API.translate(item.content || '', target),
+        ]);
+        if (!cancelled) {
+          setDynamicTitle(translatedTitle || '');
+          setDynamicContent(translatedContent || '');
+        }
+      } catch (err) {
+        console.warn('Runtime translation failed:', err);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [open, item, viewLang, needsRuntimeTranslation]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setViewLang(defaultLang); } }}>
