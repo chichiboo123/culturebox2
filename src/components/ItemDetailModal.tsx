@@ -35,27 +35,28 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   const [dynamicTitle, setDynamicTitle] = useState<string>('');
   const [dynamicContent, setDynamicContent] = useState<string>('');
 
-  if (!item) return null;
-
-  const title = dynamicTitle || getItemTitle(item, viewLang);
-  const localizedContent = dynamicContent || getItemContent(item, viewLang);
-  const mediaSource = item.file_url || localizedContent || item.content || '';
-
-  // For YouTube, try content first, then file_url
-  const youtubeSource = item.file_url || localizedContent || item.content || '';
-  const youtubeId = item.type === 'youtube' ? extractYouTubeId(youtubeSource) : null;
-
   const needsRuntimeTranslation = useMemo(() => {
+    if (!item) return false;
     if (viewLang === 'ko') return false;
     if (viewLang === 'en') return !item.title_en || !item.content_en;
     if (viewLang === 'ja') return !item.title_ja || !item.content_ja;
     return false;
   }, [item, viewLang]);
 
+  const baseTitle = item ? getItemTitle(item, viewLang) : '';
+  const baseContent = item ? getItemContent(item, viewLang) : '';
+  const title = needsRuntimeTranslation ? (dynamicTitle || baseTitle) : baseTitle;
+  const localizedContent = needsRuntimeTranslation ? (dynamicContent || baseContent) : baseContent;
+  const mediaSource = item ? (item.file_url || localizedContent || item.content || '') : '';
+
+  // For YouTube, try content first, then file_url
+  const youtubeSource = item ? (item.file_url || localizedContent || item.content || '') : '';
+  const youtubeId = item?.type === 'youtube' ? extractYouTubeId(youtubeSource) : null;
+
   useEffect(() => {
     setDynamicTitle('');
     setDynamicContent('');
-  }, [item?.id]);
+  }, [item?.id, viewLang]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +80,8 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
 
     return () => { cancelled = true; };
   }, [open, item, viewLang, needsRuntimeTranslation]);
+
+  if (!item) return null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) { onClose(); setViewLang(defaultLang); } }}>
