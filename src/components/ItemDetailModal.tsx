@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { type Item, getItemTitle } from '@/lib/api';
+import { type Item, getItemTitle, getItemContent } from '@/lib/api';
 import type { Language } from '@/lib/i18n';
 import { ExternalLink } from 'lucide-react';
 import { extractYouTubeId, toGoogleDriveImageUrl, toGoogleDrivePdfEmbedUrl } from '@/lib/media';
@@ -36,10 +36,11 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
   if (!item) return null;
 
   const title = getItemTitle(item, viewLang);
-  const mediaSource = item.file_url || item.content || '';
+  const localizedContent = getItemContent(item, viewLang);
+  const mediaSource = item.file_url || localizedContent || item.content || '';
 
   // For YouTube, try content first, then file_url
-  const youtubeSource = item.content || item.file_url || '';
+  const youtubeSource = item.file_url || localizedContent || item.content || '';
   const youtubeId = item.type === 'youtube' ? extractYouTubeId(youtubeSource) : null;
 
   return (
@@ -87,7 +88,7 @@ export default function ItemDetailModal({ item, open, onClose, lang: defaultLang
           {item.type === 'text' && (
             <div className="rounded-2xl bg-muted/30 p-5">
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {item.content}
+                {localizedContent}
               </p>
             </div>
           )}

@@ -350,7 +350,7 @@ export default function BoxDetail() {
                 </div>
               )}
               {item.type === 'youtube' && (() => {
-                const src = item.content || item.file_url || '';
+                const src = item.file_url || item.content || '';
                 const vid = extractYouTubeId(src);
                 return vid ? (
                   <div className="mt-2 aspect-video w-full overflow-hidden rounded-2xl">

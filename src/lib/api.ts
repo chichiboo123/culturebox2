@@ -37,6 +37,8 @@ export interface Item {
   title_en?: string;
   title_ja?: string;
   content: string;
+  content_en?: string;
+  content_ja?: string;
   file_url?: string;
   order: number;
   created_by: string;
@@ -188,6 +190,8 @@ export const API = {
     fetchGAS('adminLogout', { admin_token: adminToken }, false),
   validateAdminSession: (adminToken: string): Promise<{ ok: boolean }> =>
     fetchGAS('validateAdminSession', { admin_token: adminToken }, false),
+  translate: (text: string, to: 'en' | 'ja' | 'ko'): Promise<string> =>
+    fetchGAS('translate', { text, to }, false),
 
   getSchools: (): Promise<School[]> => fetchGAS('getSchools'),
   getBoxes: (filters: { status?: string; search?: string; school_id?: string } = {}): Promise<Box[]> => fetchGAS('getBoxes', filters),
@@ -238,6 +242,12 @@ export function getItemTitle(item: Item, lang: Language): string {
   if (lang === 'ja' && item.title_ja) return item.title_ja;
   if (lang === 'en' && item.title_en) return item.title_en;
   return item.title || item.title_en || '';
+}
+
+export function getItemContent(item: Item, lang: Language): string {
+  if (lang === 'ja' && item.content_ja) return item.content_ja;
+  if (lang === 'en' && item.content_en) return item.content_en;
+  return item.content || item.content_en || '';
 }
 
 export const ACCESS_CODES = {

@@ -143,11 +143,34 @@ export default function CreateBox() {
     setProgress(0);
 
     try {
+      const safeTranslate = async (text: string, to: 'en' | 'ja') => {
+        const source = text?.trim();
+        if (!source) return '';
+        try {
+          return await API.translate(source, to);
+        } catch (e) {
+          console.warn(`Auto-translation failed (${to}), using original text`, e);
+          return source;
+        }
+      };
+
+      const boxDescription = `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`;
+      const [titleEn, titleJa, descEn, descJa] = await Promise.all([
+        safeTranslate(boxName, 'en'),
+        safeTranslate(boxName, 'ja'),
+        safeTranslate(boxDescription, 'en'),
+        safeTranslate(boxDescription, 'ja'),
+      ]);
+
       setProgress(5);
       console.log('Creating box...');
       const box = await API.createBox({
         title: boxName,
-        description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
+        title_en: titleEn,
+        title_ja: titleJa,
+        description: boxDescription,
+        description_en: descEn,
+        description_ja: descJa,
         from_school_id: fromSchool,
         to_school_id: resolvedTo,
         created_by: user?.id || 'unknown',
@@ -183,7 +206,20 @@ export default function CreateBox() {
       for (let i = 0; i < uploadedItems.length; i++) {
         const item = uploadedItems[i];
         console.log(`Adding item ${i}: ${item.title}`);
-        await API.addItem({ ...item, box_id: box.id });
+        const [itemTitleEn, itemTitleJa, itemContentEn, itemContentJa] = await Promise.all([
+          safeTranslate(item.title || '', 'en'),
+          safeTranslate(item.title || '', 'ja'),
+          safeTranslate(item.content || '', 'en'),
+          safeTranslate(item.content || '', 'ja'),
+        ]);
+        await API.addItem({
+          ...item,
+          box_id: box.id,
+          title_en: itemTitleEn,
+          title_ja: itemTitleJa,
+          content_en: itemContentEn,
+          content_ja: itemContentJa,
+        });
         const itemWeight = uploadedItems.length > 0 ? 10 / uploadedItems.length : 10;
         setProgress(Math.min(85, Math.round(75 + itemWeight * (i + 1))));
       }
