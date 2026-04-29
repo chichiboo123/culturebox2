@@ -143,11 +143,34 @@ export default function CreateBox() {
     setProgress(0);
 
     try {
+      const safeTranslate = async (text: string, to: 'en' | 'ja') => {
+        const source = text?.trim();
+        if (!source) return '';
+        try {
+          return await API.translate(source, to);
+        } catch (e) {
+          console.warn(`Auto-translation failed (${to}), using original text`, e);
+          return source;
+        }
+      };
+
+      const boxDescription = `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`;
+      const [titleEn, titleJa, descEn, descJa] = await Promise.all([
+        safeTranslate(boxName, 'en'),
+        safeTranslate(boxName, 'ja'),
+        safeTranslate(boxDescription, 'en'),
+        safeTranslate(boxDescription, 'ja'),
+      ]);
+
       setProgress(5);
       console.log('Creating box...');
       const box = await API.createBox({
         title: boxName,
-        description: `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`,
+        title_en: titleEn,
+        title_ja: titleJa,
+        description: boxDescription,
+        description_en: descEn,
+        description_ja: descJa,
         from_school_id: fromSchool,
         to_school_id: resolvedTo,
         created_by: user?.id || 'unknown',
@@ -155,28 +178,52 @@ export default function CreateBox() {
       console.log('Box created:', box.id);
       setProgress(15);
 
-      const uploadedItems = await Promise.all(items.map(async (originalItem, i) => {
+      const uploadedItems: LocalItem[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const originalItem = items[i];
         const item = { ...originalItem };
         if (item.file_url && item.file_url.startsWith('data:')) {
           try {
             console.log(`Uploading file for item ${i}...`);
             const ext = item.type === 'pdf' ? '.pdf' : '.img';
-            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`);
-            if (driveUrl) item.file_url = driveUrl;
-          } catch (uploadErr) {
-            console.warn('File upload failed, using local data URL fallback:', uploadErr);
+            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`, (uploadPercent) => {
+              const itemWeight = items.length > 0 ? 55 / items.length : 55;
+              const base = 15 + i * itemWeight;
+              const scaled = base + (uploadPercent / 100) * itemWeight;
+              setProgress(Math.min(70, Math.round(scaled)));
+            });
+            if (!driveUrl) throw new Error('파일 업로드 URL을 가져오지 못했습니다.');
+            item.file_url = driveUrl;
+          } catch (uploadErr: any) {
+            console.error('File upload failed:', uploadErr);
+            throw new Error(`"${item.title}" 파일 업로드에 실패했습니다. 파일 크기를 줄이거나 다시 시도해주세요.`);
           }
         }
-        return item;
-      }));
+        uploadedItems.push(item);
+      }
 
       setProgress(75);
-      await Promise.all(uploadedItems.map((item, i) => {
+      for (let i = 0; i < uploadedItems.length; i++) {
+        const item = uploadedItems[i];
         console.log(`Adding item ${i}: ${item.title}`);
-        return API.addItem({ ...item, box_id: box.id });
-      }));
+        const [itemTitleEn, itemTitleJa, itemContentEn, itemContentJa] = await Promise.all([
+          safeTranslate(item.title || '', 'en'),
+          safeTranslate(item.title || '', 'ja'),
+          safeTranslate(item.content || '', 'en'),
+          safeTranslate(item.content || '', 'ja'),
+        ]);
+        await API.addItem({
+          ...item,
+          box_id: box.id,
+          title_en: itemTitleEn,
+          title_ja: itemTitleJa,
+          content_en: itemContentEn,
+          content_ja: itemContentJa,
+        });
+        const itemWeight = uploadedItems.length > 0 ? 10 / uploadedItems.length : 10;
+        setProgress(Math.min(85, Math.round(75 + itemWeight * (i + 1))));
+      }
 
-      setProgress(85);
       await API.sendBox(box.id);
       setProgress(100);
       setSendSuccess(true);

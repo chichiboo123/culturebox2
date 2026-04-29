@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { API, type Box, type Item, type Message, getBoxTitle, getBoxDesc, getSchoolName, getItemTitle, getBoxGradient, generateId } from '@/lib/api';
+import { extractYouTubeId, toGoogleDriveImageUrl } from '@/lib/media';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -341,7 +342,7 @@ export default function BoxDetail() {
                 <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">{item.content}</p>
               )}
               {item.type === 'image' && item.file_url && (
-                <img src={item.file_url} alt={item.title} className="mt-2 aspect-video w-full rounded-2xl object-cover" />
+                <img src={toGoogleDriveImageUrl(item.file_url)} alt={item.title} className="mt-2 aspect-video w-full rounded-2xl object-cover" />
               )}
               {item.type === 'video' && (
                 <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-muted/60">
@@ -349,19 +350,11 @@ export default function BoxDetail() {
                 </div>
               )}
               {item.type === 'youtube' && (() => {
-                const src = item.content || item.file_url || '';
-                const patterns = [
-                  /(?:youtube\.com\/watch\?v=)([\w-]+)/,
-                  /(?:youtube\.com\/embed\/)([\w-]+)/,
-                  /(?:youtu\.be\/)([\w-]+)/,
-                  /(?:youtube\.com\/shorts\/)([\w-]+)/,
-                ];
-                let vid: string | null = null;
-                for (const p of patterns) { const m = src.match(p); if (m?.[1]) { vid = m[1]; break; } }
-                if (!vid && /^[\w-]{11}$/.test(src.trim())) vid = src.trim();
+                const src = item.file_url || item.content || '';
+                const vid = extractYouTubeId(src);
                 return vid ? (
                   <div className="mt-2 aspect-video w-full overflow-hidden rounded-2xl">
-                    <iframe src={`https://www.youtube.com/embed/${vid}`} className="h-full w-full" allowFullScreen title={item.title} />
+                    <iframe src={`https://www.youtube-nocookie.com/embed/${vid}?rel=0&modestbranding=1`} className="h-full w-full" allowFullScreen title={item.title} />
                   </div>
                 ) : (
                   <div className="mt-2 flex items-center justify-center aspect-video w-full rounded-2xl bg-gradient-to-br from-red-50 to-red-100">
