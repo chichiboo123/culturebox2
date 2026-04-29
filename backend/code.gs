@@ -475,7 +475,7 @@ function handleRequest(rawParams) {
         type: normalize(params.type || 'text'),
         media_url: normalize(params.media_url),
         parent_id: normalize(params.parent_id),
-        status: 'pending',
+        status: normalize(params.status || 'approved') || 'approved',
         created_at: new Date().toISOString(),
       };
       appendRow('Messages', msg);

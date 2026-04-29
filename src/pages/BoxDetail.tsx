@@ -19,6 +19,8 @@ export default function BoxDetail() {
   const [items, setItems] = useState<Item[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [tab, setTab] = useState<'items' | 'messages'>('items');
+  const [messageLang, setMessageLang] = useState<'orig' | 'ko' | 'en' | 'ja'>('orig');
+  const [messageTranslations, setMessageTranslations] = useState<Record<string, string>>({});
 
   // Unboxing state
   const [unboxStep, setUnboxStep] = useState(0);
@@ -155,6 +157,15 @@ export default function BoxDetail() {
   const handleRemoveFile = () => {
     setSocialFile(null);
     setSocialFilePreview('');
+  };
+
+
+  const getTranslatedMessage = async (msg: Message, to: 'ko' | 'en' | 'ja') => {
+    const key = `${msg.id}_${to}`;
+    if (messageTranslations[key]) return messageTranslations[key];
+    const translated = await API.translate(msg.content || '', to);
+    setMessageTranslations(prev => ({ ...prev, [key]: translated || msg.content || '' }));
+    return translated || msg.content || '';
   };
 
   const renderItemIcon = (type: string) => {
@@ -379,6 +390,17 @@ export default function BoxDetail() {
       {/* Messages tab */}
       {tab === 'messages' && (
         <div id="box-panel-messages" role="tabpanel" aria-labelledby="box-tab-messages">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-xs text-muted-foreground">댓글 번역 보기</div>
+            <div className="flex gap-1">
+              {(['orig','ko','en','ja'] as const).map(code => (
+                <button key={code} onClick={() => setMessageLang(code)} className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${messageLang===code ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                  {code === 'orig' ? '원문' : code.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Compose */}
           <div className="mb-8 rounded-3xl border border-border bg-card p-6 shadow-sm">
             <div className="mb-3 flex items-center gap-2">
@@ -462,7 +484,15 @@ export default function BoxDetail() {
                     </div>
                   </div>
                 </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">{messageLang === 'orig' ? msg.content : (messageTranslations[`${msg.id}_${messageLang}`] || msg.content)}</p>
+                {messageLang !== 'orig' && !messageTranslations[`${msg.id}_${messageLang}`] && (
+                  <button
+                    className="mt-1 text-xs text-primary underline"
+                    onClick={() => getTranslatedMessage(msg, messageLang as 'ko' | 'en' | 'ja').catch(() => null)}
+                  >
+                    번역 불러오기
+                  </button>
+                )}
                 {msg.media_url && (
                   msg.media_url.match(/\.(mp4|webm|mov)(\?|$)/i) || msg.media_url.startsWith('data:video') ? (
                     <video src={msg.media_url} controls className="mt-3 max-h-60 rounded-2xl" />

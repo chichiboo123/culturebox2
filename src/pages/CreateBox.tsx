@@ -11,6 +11,15 @@ import { ArrowLeft, ArrowRight, Plus, X, Check, Send, Package, Upload, Pencil, C
 
 type LocalItem = Omit<Item, 'id' | 'box_id' | 'created_by' | 'created_at'>;
 
+function detectSourceLang(texts: string[]): 'ko' | 'en' | 'ja' {
+  const sample = texts.join(' ').trim();
+  if (!sample) return 'ko';
+  if (/[぀-ヿㇰ-ㇿ]/.test(sample)) return 'ja';
+  if (/[가-힣]/.test(sample)) return 'ko';
+  if (/[A-Za-z]/.test(sample)) return 'en';
+  return 'en';
+}
+
 const itemTypes = [
   { type: 'text', icon: '📝', label: '텍스트' },
   { type: 'image', icon: '🖼️', label: '이미지/동영상' },
@@ -143,7 +152,7 @@ export default function CreateBox() {
     setProgress(0);
 
     try {
-      const safeTranslate = async (text: string, to: 'en' | 'ja') => {
+      const safeTranslate = async (text: string, to: 'en' | 'ja' | 'ko') => {
         const source = text?.trim();
         if (!source) return '';
         try {
@@ -154,21 +163,25 @@ export default function CreateBox() {
         }
       };
 
-      const boxDescription = `${creators ? `만든 사람들: ${creators}\n` : ''}${boxDesc}`;
-      const [titleEn, titleJa, descEn, descJa] = await Promise.all([
-        safeTranslate(boxName, 'en'),
-        safeTranslate(boxName, 'ja'),
-        safeTranslate(boxDescription, 'en'),
-        safeTranslate(boxDescription, 'ja'),
+      const boxDescription = `${creators ? `만든 사람들: ${creators}
+` : ''}${boxDesc}`;
+      const boxSourceLang = detectSourceLang([boxName, boxDescription]);
+      const [titleKo, titleEn, titleJa, descKo, descEn, descJa] = await Promise.all([
+        boxSourceLang === 'ko' ? Promise.resolve(boxName) : safeTranslate(boxName, 'ko'),
+        boxSourceLang === 'en' ? Promise.resolve(boxName) : safeTranslate(boxName, 'en'),
+        boxSourceLang === 'ja' ? Promise.resolve(boxName) : safeTranslate(boxName, 'ja'),
+        boxSourceLang === 'ko' ? Promise.resolve(boxDescription) : safeTranslate(boxDescription, 'ko'),
+        boxSourceLang === 'en' ? Promise.resolve(boxDescription) : safeTranslate(boxDescription, 'en'),
+        boxSourceLang === 'ja' ? Promise.resolve(boxDescription) : safeTranslate(boxDescription, 'ja'),
       ]);
 
       setProgress(5);
       console.log('Creating box...');
       const box = await API.createBox({
-        title: boxName,
+        title: titleKo,
         title_en: titleEn,
         title_ja: titleJa,
-        description: boxDescription,
+        description: descKo,
         description_en: descEn,
         description_ja: descJa,
         from_school_id: fromSchool,
@@ -206,17 +219,22 @@ export default function CreateBox() {
       for (let i = 0; i < uploadedItems.length; i++) {
         const item = uploadedItems[i];
         console.log(`Adding item ${i}: ${item.title}`);
-        const [itemTitleEn, itemTitleJa, itemContentEn, itemContentJa] = await Promise.all([
-          safeTranslate(item.title || '', 'en'),
-          safeTranslate(item.title || '', 'ja'),
-          safeTranslate(item.content || '', 'en'),
-          safeTranslate(item.content || '', 'ja'),
+        const itemSourceLang = detectSourceLang([item.title || '', item.content || '']);
+        const [itemTitleKo, itemTitleEn, itemTitleJa, itemContentKo, itemContentEn, itemContentJa] = await Promise.all([
+          itemSourceLang === 'ko' ? Promise.resolve(item.title || '') : safeTranslate(item.title || '', 'ko'),
+          itemSourceLang === 'en' ? Promise.resolve(item.title || '') : safeTranslate(item.title || '', 'en'),
+          itemSourceLang === 'ja' ? Promise.resolve(item.title || '') : safeTranslate(item.title || '', 'ja'),
+          itemSourceLang === 'ko' ? Promise.resolve(item.content || '') : safeTranslate(item.content || '', 'ko'),
+          itemSourceLang === 'en' ? Promise.resolve(item.content || '') : safeTranslate(item.content || '', 'en'),
+          itemSourceLang === 'ja' ? Promise.resolve(item.content || '') : safeTranslate(item.content || '', 'ja'),
         ]);
         await API.addItem({
           ...item,
           box_id: box.id,
+          title: itemTitleKo,
           title_en: itemTitleEn,
           title_ja: itemTitleJa,
+          content: itemContentKo,
           content_en: itemContentEn,
           content_ja: itemContentJa,
         });
