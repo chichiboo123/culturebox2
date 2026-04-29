@@ -155,38 +155,26 @@ export default function CreateBox() {
       console.log('Box created:', box.id);
       setProgress(15);
 
-      for (let i = 0; i < items.length; i++) {
-        const itemStart = 15 + Math.round((i / (items.length + 1)) * 65);
-        const itemEnd = 15 + Math.round(((i + 1) / (items.length + 1)) * 65);
-        setProgress(itemStart);
-
-        const item = { ...items[i] };
-
-        // If file_url is a DataURL, try upload but don't block on failure
+      const uploadedItems = await Promise.all(items.map(async (originalItem, i) => {
+        const item = { ...originalItem };
         if (item.file_url && item.file_url.startsWith('data:')) {
           try {
             console.log(`Uploading file for item ${i}...`);
             const ext = item.type === 'pdf' ? '.pdf' : '.img';
-            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`, (uploadPercent) => {
-              const rangedProgress = itemStart + Math.round((uploadPercent / 100) * (itemEnd - itemStart));
-              setProgress(rangedProgress);
-            });
-            if (driveUrl) {
-              item.file_url = driveUrl;
-            } else {
-              console.warn('Upload returned empty URL, clearing file_url');
-              item.file_url = undefined;
-            }
+            const driveUrl = await API.uploadFile(item.file_url, `${item.title || 'file'}${ext}`);
+            if (driveUrl) item.file_url = driveUrl;
           } catch (uploadErr) {
-            console.warn('File upload failed, saving item without file:', uploadErr);
-            item.file_url = undefined;
+            console.warn('File upload failed, using local data URL fallback:', uploadErr);
           }
         }
+        return item;
+      }));
 
-        setProgress(itemEnd);
+      setProgress(75);
+      await Promise.all(uploadedItems.map((item, i) => {
         console.log(`Adding item ${i}: ${item.title}`);
-        await API.addItem({ ...item, box_id: box.id });
-      }
+        return API.addItem({ ...item, box_id: box.id });
+      }));
 
       setProgress(85);
       await API.sendBox(box.id);
